@@ -286,12 +286,12 @@ static uint32_t scale_leds(uint32_t *root)
     uint32_t k, m = 0, r = 0, mask = scale_mask(t), note;
     int32_t pc;
     *root = 0;
-    if (!(ui_rec_prefs & (PREF_SCALE_LEDS >> 8)))
+    if (!(ui_rec_prefs & (PREF_SCALE_LEDS >> 8)) && !gen_on(t))   /* (the garden's keys always show: they are its notes) */
         return 0;
     for (k = 0; k < 27u; k++) {
         if (e->keys && e->keys(t, k) >= 0)
             continue;
-        if (t->p[P_QUANT] == QN_WHITE) {
+        if (t->p[P_QUANT] == QN_WHITE && !gen_on(t)) {
             if ((note = kb_map(t, k)) > 127u)
                 continue;                               /* (a black key: silent) */
             pc = (int32_t)note - t->p[P_TRANS];         /* (WHITE walks the scale before TRN) */

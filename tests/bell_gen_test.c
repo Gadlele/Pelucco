@@ -87,6 +87,41 @@ int main(void)
     /* the pentatonic, RANGE 2 oct: notes stay within 48 .. 48 + 24 */
     play(60, 0, 9, 5);
     for (i = 0; i < NSTEPS; i++) for (k = 0; k < cnt[i] && k < 4u; k++) CHK(notes[i][k] >= 36u && notes[i][k] < 48u + 24u);
+    /* the garden: with the generator on, a key turns its note on / off and does not play; the bells keep to the garden */
+    {
+        track_t *t;
+        uint32_t seen = 0, kc, ke;
+        play(60, 0, 9, 1);                                 /* track 3 on BELL, DENS 60, C major; the sequencer stopped after */
+        t = &trk[2];
+        song.sel = 2;
+        kb_prev = 0; fm1_in.notes = 0;
+        CHK(garden[2] == 0 && scale_mask(t) == SCALE_MASK[1]);
+        kc = 53u % 12u;                                    /* key 0 is F3 (53): pitch class 5 */
+        key_down(0); key_up(0);
+        CHK(garden[2] == (uint16_t)(SCALE_MASK[1] ^ (1u << 5)));      /* the scale to start from, F turned off */
+        CHK(!((scale_mask(t) >> 5) & 1u));
+        CHK(t->v[0].active == 0 || !t->v[0].gate);         /* (the key sounded nothing) */
+        key_down(2); key_up(2);                            /* key 2 = G3 (pitch class 7): off too */
+        key_down(1); key_up(1);                            /* key 1 = F#3 (6): on */
+        CHK(!((garden[2] >> 7) & 1u) && ((garden[2] >> 6) & 1u));
+        /* the bells only fall on the garden: C D E F# A B (F and G out) */
+        play(100, 0, 9, 1);                                /* (play() starts the track again; garden stays) */
+        for (i = 0; i < NSTEPS; i++) for (k = 0; k < cnt[i] && k < 4u; k++) {
+            uint32_t pc = notes[i][k] % 12u;
+            seen |= 1u << pc;
+            CHK((garden[2] >> pc) & 1u);
+        }
+        CHK(seen != 0);
+        (void)kc; (void)ke;
+        /* DENS 0: the keys play again, the garden is left alone */
+        t->p[P_E4] = 0;
+        {
+            uint16_t g = garden[2];
+            key_down(0); key_up(0);
+            CHK(garden[2] == g);
+        }
+        garden[2] = 0;
+    }
     printf("bell_gen: hits at DENS 25: %u, 70: %u of %u steps; note-ons %u / %u\n", a, b, NSTEPS, n1, n2);
     (void)h1;
     if (bad) { printf("bell_gen: %d FAILED\n", bad); return 1; }

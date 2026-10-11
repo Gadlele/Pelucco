@@ -93,9 +93,42 @@ static int32_t song_key(uint32_t k)
     return k < 10u ? S[k] : -1;
 }
 
-static uint32_t scale_mask(const track_t *t)
+/* BELL's generator is on (Pelucco; below): a track on BELL with DENS above 0 */
+static inline uint32_t gen_on(const track_t *t)
+{
+    return FELUCCA_BELL && eng_idx(t->eng_req) == ENGI_BELL && t->p[P_E4] > 0;
+}
+
+/* The garden (Pelucco, after AMB-1): while a track's generator is on its keys do not play, each one turns its pitch
+ * class on or off in the track's garden, the notes the bells are drawn from; the first key starts from the scale (ROOT,
+ * SCALE). The garden is then the track's scale (scale_mask: the bells, MIDI IN, SCALE LEDS all follow it); empty (every
+ * key turned off) it is the scale again. Bit n: the pitch class n (0 = C). Not saved: gone at power-off */
+static uint16_t garden[NTRK];
+static uint32_t scale_bits(const track_t *t)
 {
     return SCALE_MASK[clamp(t->p[P_SCALE], 0, sizeof SCALE_MASK / sizeof SCALE_MASK[0] - 1)];
+}
+static uint32_t scale_mask(const track_t *t)
+{
+    uint32_t ti = (uint32_t)(t - trk), g = ti < NTRK ? garden[ti] : 0u, r, m = 0, root = (uint32_t)((t->p[P_ROOT] % 12 + 12) % 12);
+    if (!g || !gen_on(t))
+        return scale_bits(t);
+    for (r = 0; r < 12u; r++)                      /* (relative to ROOT, as the scales are) */
+        m |= ((g >> ((r + root) % 12u)) & 1u) << r;
+    return m;
+}
+/* key k of a track whose generator is on: its pitch class (as the SCALE LEDS give it) turned on or off */
+static void garden_toggle(const track_t *t, uint32_t k)
+{
+    uint32_t ti = (uint32_t)(t - trk), pc = (uint32_t)(((53 + (int32_t)k + t->p[P_TRANS]) % 12 + 12) % 12), r, root = (uint32_t)((t->p[P_ROOT] % 12 + 12) % 12);
+    if (ti >= NTRK)
+        return;
+    if (!garden[ti]) {                             /* the first key: the scale as the garden to start from */
+        uint32_t m = scale_bits(t);
+        for (r = 0; r < 12u; r++)
+            garden[ti] |= (uint16_t)(((m >> r) & 1u) << ((r + root) % 12u));
+    }
+    garden[ti] ^= (uint16_t)(1u << pc);
 }
 
 /* note n moved down onto the track's scale (ROOT, SCALE): QNT SNAP's keys and QNT SEQ's sequenced notes */
@@ -785,7 +818,10 @@ static void keyboard_block(void)
                 kb_note[k] = KB_SILENT;
             else if (song.grid == 1u)             /* the DRUM grid: a lane key plays its lane, the rest are the UI's */
                 kb_note[k] = grid_key_note(k);
-            else if (omni_on(&trk[kb_trk[k]]))    /* OMNI: every key sounds (omni_keys); a note for the rest */
+            else if (gen_on(&trk[kb_trk[k]])) {   /* the garden (BELL's generator on): the key turns its note on / off */
+                garden_toggle(&trk[kb_trk[k]], k);
+                kb_note[k] = KB_SILENT;
+            } else if (omni_on(&trk[kb_trk[k]]))    /* OMNI: every key sounds (omni_keys); a note for the rest */
                 kb_note[k] = 60;
             else
                 kb_note[k] = (uint8_t)kb_map(&trk[kb_trk[k]], k);
@@ -1049,10 +1085,6 @@ static void gen_reset(gen_t *g, uint32_t seed)
     g->c = 0;
 }
 static void gen_restart(uint32_t k) { gen[k].ok = 0; }
-static inline uint32_t gen_on(const track_t *t)
-{
-    return FELUCCA_BELL && eng_idx(t->eng_req) == ENGI_BELL && t->p[P_E4] > 0;
-}
 static __attribute__((noinline)) void gen_step(track_t *t, uint32_t idx, uint32_t period)
 {
     gen_t *g = &gen[trk_index(t)];

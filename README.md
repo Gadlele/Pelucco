@@ -386,6 +386,11 @@ selected track's part, and the tracks' rows lead with it ("PAD / SOFT PAD"). HOM
 (track 3, the BELL engine) has **DENS** and **EVOLVE** of the generator, then the **DLY** and **REV** sends; LEAD and NOISE keep
 their engine's own four. The sounds each track starts with are unchanged: load the ones you want.
 
+**The garden** (Pelucco, after [AMB-1](https://github.com/charlesvestal/fm1-amb)): on **ECHOES** (the BELL engine with DENS above 0)
+the keys do not play, each one turns its note on or off for the bells to be drawn from. The first key starts from the
+track's ROOT / SCALE and turns that note off; the lit keys are the garden (always, whatever MENU > SCALE LEDS says). With every
+note off the scale is the garden again. MIDI IN follows it too. With DENS 0 the keys play as ever. The garden is not saved.
+
 **OMNI** (Pelucco, after [FoMni](https://github.com/charlesvestal/fm1-fomni)), the last CHRD value, on tracks 1 to 3: the
 keys become an Omnichord. The 11 black keys are chord buttons (F C G Dm Am Em G7 E7 D7 Bb A7 in C, following the
 track's ROOT), each sounding its chord, in the VOIC voicing, while held. The 16 white keys are the strum plate: one
