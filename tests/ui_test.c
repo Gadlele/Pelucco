@@ -2925,7 +2925,7 @@ static int test_product_ux(void)
     motion_full = 1; frame();
     bad += check("#93 the events used up: AUTOMATION FULL", msg_is("AUTOMATION FULL") && !motion_full);
     {   /* #63: a card shows MOTION's icon while the track's motion changes its parameter */
-        uint32_t id = ENGINES[TSEL->eng_req]->knob[0];
+        uint32_t id = home_id(TSEL, 0);
         ui_power_on(); go_home(); frame();
         ok = !card_motion(0) && !card_motion(1);
         song.rec = 1; seq_start(); go_home(); turn(EN_K1, 1); frame();
@@ -5734,6 +5734,41 @@ static uint64_t scr_session_fork(uint32_t setting, uint32_t *flags)   /* from th
     *flags = (uint32_t)r[1];
     return r[0];
 }
+/* Pelucco: the four tracks are parts, PAD LEAD ECHOES NOISE; HOME's four knobs follow the part (ui.c home_id): the PAD's
+ * are its engine's first, ATK, REL, REV; ECHOES (on BELL) DENS, EVOLVE, DLY, REV; LEAD and NOISE the engine's own */
+static int test_roles(void)
+{
+    int bad = 0, ok;
+    uint32_t k;
+    ui_power_on();
+    ok = str_eq(ROLE_NAME[0], "PAD") && str_eq(ROLE_NAME[1], "LEAD") && str_eq(ROLE_NAME[2], "ECHOES") &&
+         str_eq(ROLE_NAME[3], "NOISE");
+    bad += check("parts: PAD LEAD ECHOES NOISE", ok);
+    ok = home_id(&trk[0], 0) == ENGINES[trk[0].eng_req]->knob[0] && home_id(&trk[0], 1) == P_ATK &&
+         home_id(&trk[0], 2) == P_REL && home_id(&trk[0], 3) == P_REV;
+    bad += check("  PAD: the engine's first knob, ATK, REL, REV", ok);
+    ok = FELUCCA_BELL && trk[2].eng_req == ENGI_BELL && home_id(&trk[2], 0) == P_E4 && home_id(&trk[2], 1) == P_E5 &&
+         home_id(&trk[2], 2) == P_DLY && home_id(&trk[2], 3) == P_REV;
+    bad += check("  ECHOES on BELL: DENS, EVOLVE, DLY, REV", ok);
+    for (k = 0; k < 4u; k++)
+        ok &= home_id(&trk[1], k) == ENGINES[trk[1].eng_req]->knob[k] && home_id(&trk[3], k) == ENGINES[trk[3].eng_req]->knob[k];
+    bad += check("  LEAD and NOISE: the engine's own four", ok);
+    trk[2].eng_req = 0;                                  /* ECHOES on another sound: its own four again */
+    ok = home_id(&trk[2], 0) == ENGINES[0]->knob[0] && home_id(&trk[2], 3) == ENGINES[0]->knob[3];
+    bad += check("  ECHOES on another engine: that engine's four", ok);
+    trk[3].eng_req = ENGI_DRUM;                          /* a kit as the PAD: the engine's own too */
+    trk[0].eng_req = ENGI_DRUM;
+    ok = home_id(&trk[0], 1) == ENGINES[ENGI_DRUM]->knob[1];
+    bad += check("  PAD on a kit: the kit's four", ok);
+    ui_power_on();
+    ui.home = 1;
+    song.sel = 2;
+    ui.force = 1;
+    frame();
+    ok = str_eq(ROLE_NAME[song.sel], "ECHOES");
+    bad += check("  the selected part names HOME", ok);
+    return bad;
+}
 /* 1.2 (Discussions #72 / #73): MOMENTARY, LFO held. KNOB 1..4 on HOME and the sound / FX pages change their values as
  * ever and LFO let go puts each back (no LFO page then; LFO alone still opens it); OCT+ with LFO held keeps them (no
  * octave); not recorded as automation; a sound load meanwhile puts the values back first (the undo copy is the sound as
@@ -5745,13 +5780,13 @@ static int test_momentary(void)
     int16_t v0, v1, g0;
     ui_power_on();
     ui.home = 1;
-    id0 = ENGINES[TSEL->eng_req]->knob[0];
-    id1 = ENGINES[TSEL->eng_req]->knob[1];
+    id0 = home_id(TSEL, 0);
+    id1 = home_id(TSEL, 1);
     v0 = TSEL->p[id0];
     v1 = TSEL->p[id1];
     btn_down(B_LFO); frame();
     turn(EN_K1, 6);
-    turn(EN_K2, -4);
+    turn(EN_K2, 4);                                      /* (up: track 1's KNOB 2 is ATK, 0 on ACID) */
     ok = TSEL->p[id0] != v0 && TSEL->p[id1] != v1 && mom.n == 2u && msg_is("MOMENTARY  [OCT+] KEEP");
  ui_leds();
     btn_up(B_LFO); frame();
@@ -5882,11 +5917,11 @@ static int test_idle_leds(void)
     memset(fm1_led, 0x5A, sizeof fm1_led);
     ui_leds();
     bad += check("  it has the LEDs: ui_leds writes none", fm1_led[0] == 0x5A && fm1_led[3] == 0x5A);
-    v = TSEL->p[ENGINES[TSEL->eng_req]->knob[0]];
+    v = TSEL->p[home_id(TSEL, 0)];
     ui.home = 1;
     turn(EN_K1, 3); ui_leds();
     bad += check("  a knob turned ends it at once and is not swallowed (the value turns)", !host_idle &&
-                 TSEL->p[ENGINES[TSEL->eng_req]->knob[0]] != v && fm1_led[0] != 0x5A);
+                 TSEL->p[home_id(TSEL, 0)] != v && fm1_led[0] != 0x5A);
     frame(); fm1_ms += IDLE_LEDS_MS; frame(); ui_leds();   /* (the turn counted as input: a minute from it) */
     ok = host_idle;
     fm1_in.notes = 1u << 4; host_notes |= 1u << 4; frame(); ui_leds();
@@ -9253,7 +9288,7 @@ static int test_home_tracks(void)
 
     /* HOME's knobs: the selected track's; ALGORITHM moves the selection; HOME tapped: MIXER, CLOCK, HOME */
     song.sel = 2; ui.force = 1; frame();
-    id = ENGINES[trk[2].eng_req % NENGINES]->knob[0];
+    id = home_id(&trk[2], 0);
     v0 = trk[2].p[id];
     {
         int16_t o0 = trk[0].p[id], o1 = trk[1].p[id];
@@ -9264,7 +9299,7 @@ static int test_home_tracks(void)
     turn(EN_ALGO, 1);
     frame();
     ok &= song.sel == 3u && tr_px(3 + 22, tr_y(3) + 1) == T_THEME && tr_px(3 + 22, tr_y(2) + 1) == T_SURF;
-    id = ENGINES[trk[3].eng_req % NENGINES]->knob[1];
+    id = home_id(&trk[3], 1);
     v0 = trk[3].p[id];
     turn(EN_K2, -2);
     if (trk[3].p[id] == v0) turn(EN_K2, 4);
@@ -9638,6 +9673,7 @@ int main(void)
     bad += test_screen_off();
     bad += test_idle_leds();
     bad += test_momentary();
+    bad += test_roles();
     bad += test_fm6_charts();
     bad += test_fm6_ops();
     bad += test_home_tracks();

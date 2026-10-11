@@ -205,4 +205,6 @@ static const struct {
 static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {FELUCCA_BELL ? ENGI_BELL : 3, 0, 0}, {ENGI_DRUM, 0, 0}};
                                                                       /* ANALOG ACID, FM6 PAD (was DIGITAL PAD), track 3 BELL
                                                                        * (Pelucco: the bells' track; LOFI PULSE LD with FELUCCA_SLICE=1), DRUM KIT */
+/* the part each track plays, as the screen names it (HOME's footer, the tracks' rows) */
+static const char *const ROLE_NAME[NPART] = {"PAD", "LEAD", "ECHOES", "NOISE"};
 static uint32_t trk_def_engine(uint32_t i) { return TRK_DEF[i % NPART][0]; }

@@ -470,10 +470,25 @@ static int lock_page_ok(uint32_t i)
             return 1;
     return 0;
 }
+/* Pelucco: the parameter on HOME's KNOB k of track t, by the part it plays (ROLE_NAME). PAD (track 1, a pitched engine):
+ * the engine's first knob, then ATK and REL (the swell in, the tail out) and the reverb send (the space). ECHOES (track 3
+ * on BELL): DENS and EVOLVE of its generator, then the delay and reverb sends. LEAD and NOISE (and any other sound
+ * on a part): the engine's own four. */
+static uint32_t home_id(const track_t *t, uint32_t k)
+{
+    const engine_t *e = ENGINES[t->eng_req % NENGINES];
+    uint32_t ti = (uint32_t)(t - trk);
+    k &= 3u;
+    if (ti == 0u && !chord_kit(t))
+        return k == 0u ? e->knob[0] : k == 1u ? (uint32_t)P_ATK : k == 2u ? (uint32_t)P_REL : (uint32_t)P_REV;
+    if (ti == 2u && FELUCCA_BELL && t->eng_req == ENGI_BELL)
+        return k == 0u ? (uint32_t)P_E4 : k == 1u ? (uint32_t)P_E5 : k == 2u ? (uint32_t)P_DLY : (uint32_t)P_REV;
+    return e->knob[k];
+}
 static uint32_t lock_id(uint32_t k)
 {
     uint32_t id = ui.plk_src && lock_page_ok(ui.plk_src - 1u) ? PAGES[ui.plk_src - 1u].id[k & 3u]
-                                                               : ENGINES[TSEL->eng_req % NENGINES]->knob[k & 3u];
+                                                               : home_id(TSEL, k);
     return id < P_COUNT && motion_param(id) ? id : 0xFFu;
 }
 
@@ -1553,7 +1568,7 @@ static uint32_t preset_visible(uint32_t cur, uint32_t total, uint32_t row)
 static track_t *home_trk(uint32_t k) { return home_levels() ? &trk[k & 3u] : TSEL; }
 static const param_desc_t *home_param(uint32_t k, int16_t **vp)
 {
-    uint32_t id = home_levels() ? (uint32_t)P_LEVEL : ENGINES[TSEL->eng_req % NENGINES]->knob[k & 3u];
+    uint32_t id = home_levels() ? (uint32_t)P_LEVEL : home_id(TSEL, k);
     *vp = &home_trk(k)->p[id];
     return track_desc(home_trk(k), id);
 }

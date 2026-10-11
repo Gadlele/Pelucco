@@ -380,6 +380,12 @@ Drum kits and incoming MIDI keep their own note mapping.
 Press **SCL** again for the **CHORD** page: CHRD picks the chord keys (OFF, the scale's triads or
 sevenths, or a fixed shape) and VOIC the voicing.
 
+**Parts** (Pelucco): the four tracks are named for what they play, **PAD, LEAD, ECHOES, NOISE**: HOME's footer shows the
+selected track's part, and the tracks' rows lead with it ("PAD / SOFT PAD"). HOME's four knobs follow the part: the **PAD**
+(track 1) has its sound's first knob, **ATK** (the swell in), **REL** (the tail out) and **REV** (the space); **ECHOES**
+(track 3, the BELL engine) has **DENS** and **EVOLVE** of the generator, then the **DLY** and **REV** sends; LEAD and NOISE keep
+their engine's own four. The sounds each track starts with are unchanged: load the ones you want.
+
 **OMNI** (Pelucco, after [FoMni](https://github.com/charlesvestal/fm1-fomni)), the last CHRD value, on tracks 1 to 3: the
 keys become an Omnichord. The 11 black keys are chord buttons (F C G Dm Am Em G7 E7 D7 Bb A7 in C, following the
 track's ROOT), each sounding its chord, in the VOIC voicing, while held. The 16 white keys are the strum plate: one

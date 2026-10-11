@@ -734,7 +734,7 @@ static void draw_foot(void)
     int32_t x;
     sound_name(t, pn);
     if (ui.home)
-        str_cpy(ti, "HOME", sizeof ti);
+        str_cpy(ti, ROLE_NAME[song.sel % NPART], sizeof ti);   /* Pelucco: HOME is the part's: PAD LEAD ECHOES NOISE */
     else                                               /* page title + number in its family: "ENV DEST 2/2" */
         page_title(ti);
     str_cpy(s, ename, sizeof s);

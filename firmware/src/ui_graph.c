@@ -1802,13 +1802,15 @@ static void home_track_row(uint32_t c)
     uint16_t cn = sel ? (mute ? ux_mix(T_THEME, T_INK, 55) : T_INK) : mute ? T_DIM : T_THEME;   /* a note */
     uint16_t ca = sel || mute ? cn : T_ACCENT, cs = sel ? half : T_RAISE;   /* accented; a stub */
     uint16_t cp = sel ? ux_mix(T_THEME, T_INK, 20) : T_RAISE, cpl = sel ? T_INK : mute ? T_MID : T_TEXT;   /* playing */
-    char b[16];
+    char b[32];
     pg = song.playing ? t->seq_idx / 16u : sel ? ui.cursor / 16u : 0u;
     if (pg >= np)
         pg = np - 1u;
     p0 = pg * 16u;
     ph = song.playing && t->seq_idx / 16u == pg ? t->seq_idx % 16u : 0xFFu;
-    trk_short_name(c, b);
+    str_cpy(b, ROLE_NAME[c % NPART], sizeof b);        /* Pelucco: the part, then its sound ("PAD / SOFT PAD") */
+    str_cpy(b + str_len(b), " / ", 4);
+    trk_short_name(c, b + str_len(b));
     m = mute ? 0 : meter_px(t->peak);
     t->peak = 0;
     if (m < ts.meter[c] - 1)

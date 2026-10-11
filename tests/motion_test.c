@@ -677,8 +677,8 @@ static int lock_ui(void)
     song.rec = 1;                                        /* armed, stopped: step recording */
     lk_down(kn);
     ok = ui.entry_open && lock_held() == 1u && t->step[0].n == 1u;
-    turn(EN_K3, 4);                                      /* ANALOG's HOME: E5 E6 ATK REL */
-    bad += check("the roll, armed (step recording): a note key held (the entry) is the step held; KNOB 3 locks ATK, TIME untouched", ok &&
+    turn(EN_K2, 4);                                      /* track 1 (PAD): its engine's first knob, ATK REL REV */
+    bad += check("the roll, armed (step recording): a note key held (the entry) is the step held; KNOB 2 locks ATK, TIME untouched", ok &&
         motion_lock_get(t, 0, P_ATK, &v) && v == t->p[P_ATK] + 4 && t->step[0].time == ST_NOTE);
     lk_up(kn);
     bad += check("  let go: the note and the lock on step 1, the cursor on", ui.cursor == 1u && t->step[0].n == 1u &&

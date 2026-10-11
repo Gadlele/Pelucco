@@ -1244,9 +1244,8 @@ static void setup(int s)
     case S_MOTION_OFF:                                                            /* stopped, PLAY OFF (OCT+ CLEAR) */
         song.playing = 0; motion_set_event(TSEL, 1, P_REV, 40); motion_set_enabled(TSEL, 0); go_auto_top(); break;
     case S_MOTION_CARD: {                                          /* #63: HOME, MOTION drives KNOB 1 and 3 (3 just turned) */
-        const engine_t *en = ENGINES[TSEL->eng_req];
-        motion_set_event(TSEL, 2, en->knob[0], TSEL->p[en->knob[0]]);
-        motion_set_event(TSEL, 6, en->knob[2], TSEL->p[en->knob[2]]);
+        motion_set_event(TSEL, 2, home_id(TSEL, 0), TSEL->p[home_id(TSEL, 0)]);
+        motion_set_event(TSEL, 6, home_id(TSEL, 2), TSEL->p[home_id(TSEL, 2)]);
         go_home(); ui.hot_col = 2; ui.hot_t = 30;
         break;
     }
