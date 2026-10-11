@@ -367,6 +367,67 @@ static int omni(void)
     key_down(C);
     bad += check("OMNI off: the key is one note, as always", ngated(t) == 1u);
     key_up(C);
+    /* ENV / LFO held (omni_mod, as ui_input.c reads the buttons): FoMni's minor and seventh */
+    {
+        uint32_t Dm = nth_key(1, 3), G5 = nth_key(1, 2);
+        memset(omni_shape, 0, sizeof omni_shape); memset(omni_latch, 0, sizeof omni_latch);
+        t->p[P_CHRD] = CH_OMNI; song.octave = 0;
+        omni_mod = 1; key_down(C);
+        bad += check("OMNI: ENV held, the I button is C minor (C3 Eb3 G3)", gate_note(t, 48) && gate_note(t, 51) && gate_note(t, 55) && ngated(t) == 3u);
+        key_up(C);
+        omni_mod = 2; key_down(C);
+        bad += check("  LFO held: C7 (C3 E3 G3 Bb3)", gate_note(t, 48) && gate_note(t, 52) && gate_note(t, 55) && gate_note(t, 58) && ngated(t) == 4u);
+        key_up(C);
+        omni_mod = 3; key_down(C);
+        bad += check("  both: Cm7 (C3 Eb3 G3 Bb3)", gate_note(t, 48) && gate_note(t, 51) && gate_note(t, 55) && gate_note(t, 58) && ngated(t) == 4u);
+        key_up(C);
+        omni_mod = 1; key_down(Dm);
+        bad += check("  ENV on the ii button: Dm stays minor (D3 F3 A3)", gate_note(t, 50) && gate_note(t, 53) && gate_note(t, 57) && ngated(t) == 3u);
+        key_up(Dm);
+        omni_mod = 2; key_down(Dm);
+        bad += check("  LFO on the ii button: Dm7 (D3 F3 A3 C4)", gate_note(t, 50) && gate_note(t, 53) && gate_note(t, 57) && gate_note(t, 60) && ngated(t) == 4u);
+        key_up(Dm);
+        omni_mod = 1; key_down(G7);
+        bad += check("  ENV on G7: Gm7 (G3 Bb3 D4 F4)", gate_note(t, 55) && gate_note(t, 58) && gate_note(t, 62) && gate_note(t, 65) && ngated(t) == 4u);
+        key_up(G7);
+        omni_mod = 1; key_down(C); key_up(C); omni_mod = 0;
+        key_down(W1);
+        bad += check("  the strum plate follows the minor chord: white key 2 is Eb (C2 + 3 = 39)", gate_note(t, 39) && ngated(t) == 1u);
+        key_up(W1);
+        omni_mod = 0;
+        /* OMNI H: the chord a button started rings on after it is let go, until the next button */
+        t->p[P_CHRD] = CH_OMNIH; memset(omni_shape, 0, sizeof omni_shape);
+        key_down(C); key_up(C);
+        bad += check("OMNI H: C let go, its chord rings on (C3 E3 G3)", gate_note(t, 48) && gate_note(t, 52) && gate_note(t, 55) && ngated(t) == 3u);
+        key_down(W1);
+        bad += check("  a white key plucks over it", ngated(t) == 4u);
+        key_up(W1);
+        bad += check("  and ends alone", ngated(t) == 3u && gate_note(t, 48));
+        key_down(G5);
+        bad += check("  the next button ends it and sounds its own (G3 B3 D4)", !gate_note(t, 48) && gate_note(t, 55) && gate_note(t, 59) && gate_note(t, 62) && ngated(t) == 3u);
+        key_up(G5);
+        bad += check("  G rings on", ngated(t) == 3u);
+        t->p[P_CHRD] = CH_OMNI;
+        key_down(W0);
+        bad += check("  back to OMNI: the held chord ends at the next key", ngated(t) == 1u);
+        key_up(W0);
+        bad += check("  and nothing hangs", !ngated(t));
+    }
+    /* the real buttons: ENV held with a button key is the chord's minor and opens no page; ENV alone still does */
+    {
+        uint32_t Cb = nth_key(1, 1);
+        reset(); memset(omni_shape, 0, sizeof omni_shape);
+        trk[0].p[P_CHRD] = CH_OMNI; song.sel = 0; ui.home = 1; ui.force = 1; frame();
+        btn_down(B_ENV); frame();
+        bad += check("OMNI: ENV held reads as the minor modifier", omni_mod == 1u);
+        key_down(Cb); frame();
+        bad += check("  ENV + a button key: C minor sounds", gate_note(&trk[0], 51) && !gate_note(&trk[0], 52));
+        key_up(Cb); btn_up(B_ENV); frame();
+        bad += check("  ENV let go: no page opened, still HOME, modifier off", ui.home && omni_mod == 0u);
+        press(B_ENV);
+        bad += check("  ENV alone still opens its page", !ui.home && cur_page()->fam == FAM_ENV);
+        go_home();
+    }
     /* track 4 (the noise track) ignores OMNI */
     {
         track_t *t4 = &trk[3];

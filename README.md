@@ -397,6 +397,11 @@ track's ROOT), each sounding its chord, in the VOIC voicing, while held. The 16 
 note of the current chord each, root, third, fifth and again an octave up. OFF is the classic keyboard; MIDI IN
 always plays single notes.
 
+OMNI also has FoMni's modifiers: **ENV held** makes the button's chord minor, **LFO held** adds the seventh (C7 from a major
+button, Cm7 from a minor one), both together a minor seventh; ENV and LFO then open no page when let go (they do alone). The
+white keys follow the chord as played. The CHRD value after OMNI, **OMNI H**, is OMNI with a **chord hold**: the chord of a
+button rings on after the button is let go, until the next button (or back to OMNI) ends it; the white keys pluck over it.
+
 ## Layout
 
 | Path | What |

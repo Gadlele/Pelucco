@@ -729,9 +729,24 @@ static __attribute__((noinline)) void perf_key_remap(void)
 
 /* key k plays kb_note[k] on track t: its chord (chord.c; the note alone with CHRD OFF). A note another key
  * holds already sounds: it is not started again (nor sent to MIDI OUT); the key keeps its notes */
+/* OMNI H: the chord a button left sounding ends (before the next button, or when the track is no longer OMNI H) */
+static void omni_unlatch(track_t *t)
+{
+    uint32_t ti = trk_index(t), n = omni_latch[ti].n, i, mc = trk_midi_ch(ti);
+    omni_latch[ti].n = 0;
+    for (i = 0; i < n; i++) {
+        uint32_t x = omni_latch[ti].note[i];
+        if (midi_local_held(t, x))
+            continue;
+        input_off(t, x);
+        midi_out_event(0x08u | (0x80u | mc) << 8 | x << 16);
+    }
+}
 static void key_on(uint32_t k, track_t *t)
 {
     uint32_t omni = omni_on(t);
+    if (omni_latch[trk_index(t)].n && (t->p[P_CHRD] != CH_OMNIH || (omni && key_black(k))))
+        omni_unlatch(t);
     uint32_t n = omni ? omni_keys(t, k, kb_chord[k]) : chord_build(t, kb_note[k], kb_chord[k]), i, mc = trk_midi_ch(trk_index(t));
     kb_chn[k] = 0;
     in_key = omni ? 0u : (uint8_t)(k + 1u);         /* (the arp keeps the key: arp_add; an OMNI note is its own, not a key's) */
@@ -752,6 +767,12 @@ static void key_off(uint32_t k, track_t *t)
 {
     uint32_t n = kb_chn[k], i, mc = trk_midi_ch(trk_index(t));
     kb_chn[k] = 0;
+    if (n && t->p[P_CHRD] == CH_OMNIH && omni_on(t) && key_black(k)) {   /* OMNI H: a button's chord rings on */
+        omni_latch[trk_index(t)].n = (uint8_t)n;
+        for (i = 0; i < n; i++)
+            omni_latch[trk_index(t)].note[i] = kb_chord[k][i];
+        return;
+    }
     for (i = 0; i < n; i++) {
         uint32_t x = kb_chord[k][i];
         if (midi_local_held(t, x))

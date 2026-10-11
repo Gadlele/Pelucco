@@ -1600,6 +1600,9 @@ static void ui_input(void)
             break;
         }
     }
+    omni_mod = (uint8_t)(((fm1_in.buttons >> panel.btn[B_ENV]) & 1u) | (((fm1_in.buttons >> panel.btn[B_LFO]) & 1u) << 1));
+    if (notes && omni_on(TSEL))                         /* OMNI: ENV / LFO held with a key are the chord's minor / seventh, */
+        ui.pg_down &= (uint16_t)~((1u << panel.btn[B_ENV]) | (1u << panel.btn[B_LFO]));   /* their release opens no page */
     b = ui.pg_down & ~fm1_in.buttons;
     ui.pg_down &= (uint16_t)~b;
     for (id = 0; b; id++, b >>= 1)
