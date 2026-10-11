@@ -67,7 +67,8 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
 - **ENV SYNC** (ENV > ENV DEST): the envelope's attack, decay and release as note values of the tempo
 - **Effects:** distortion, an **INSERT** (drives, CRUSH, phaser, flanger, chorus, with a dry / wet MIX) and the
   SLICER per track; chorus, delay (in time with the tempo, dotted values included) and reverb sends (the reverb as
-  **HALL**, ROOM or SPRING; HALL is a smooth stereo reverb, the default on a fresh start); master limiter
+  **HALL**, ROOM or SPRING; HALL is a smooth stereo reverb, the default on a fresh start; **AMBI** (Pelucco) is
+  HALL with tails of 7 s at SIZE 0 up to about 90 s at 127, for pads and ambience); master limiter
 - **FX layer:** hold FX for repeat, reverse, filter sweeps, tape stop, freeze, a harmonizer
   (OCT UP / OCT DN with shimmer), **FLANGER** and **PHASER** (in time with the tempo), **REV THROW** and **ECHO THROW**
   (every track's reverb or delay send full while held), and mutes on the black keys;
