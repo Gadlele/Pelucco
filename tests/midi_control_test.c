@@ -361,8 +361,8 @@ static int cc_map_test(void)
     };
     int bad = 0, ok = 1; uint32_t i, e; int16_t before[P_COUNT];
     midi_test_reset();
-    bad += check("power-on parts: ANALOG, FM6, LOFI, DRUM", trk[0].eng_req == 0u && trk[1].eng_req == ENGI_FM6 &&
-                 trk[2].eng_req == 3u && trk[3].eng_req == ENGI_DRUM);
+    bad += check("power-on parts: ANALOG, FM6, BELL (LOFI with SLICE), DRUM", trk[0].eng_req == 0u && trk[1].eng_req == ENGI_FM6 &&
+                 trk[2].eng_req == (FELUCCA_BELL ? ENGI_BELL : 3u) && trk[3].eng_req == ENGI_DRUM);
     for (i = 0; i < NELEM(COMMON); i++) {
         queued(0xB0, COMMON[i].cc, 127, 1);
         ok &= trk[0].p[COMMON[i].id] == TP[COMMON[i].id].max;

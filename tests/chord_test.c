@@ -154,7 +154,7 @@ static int shapes_voicings(void)
         char b[12];
         ok = 1;
         for (s = 0; s <= (uint32_t)TP[P_SCALE].max; s++)
-            for (c = 1; c <= (uint32_t)TP[P_CHRD].max; c++)
+            for (c = 1; c <= CH_POW; c++)   /* (OMNI: its buttons only, below) */
                 for (v = 0; v <= (uint32_t)TP[P_VOIC].max; v++)
                     for (note = 0; note < 128u; note++) {
                         t->p[P_SCALE] = (int16_t)s; t->p[P_CHRD] = (int16_t)c; t->p[P_VOIC] = (int16_t)v;
@@ -318,9 +318,71 @@ static int kits(void)
     return bad;
 }
 
+/* OMNI (Pelucco): the black keys are chord buttons, the white keys the strum plate of the current chord */
+static uint32_t nth_key(int black, uint32_t n)
+{
+    uint32_t k;
+    for (k = 0; k < 27u; k++)
+        if (key_black(k) == black && !n--)
+            return k;
+    return 0;
+}
+static int omni(void)
+{
+    int bad = 0;
+    track_t *t = &trk[0];
+    uint32_t C = nth_key(1, 1), G7 = nth_key(1, 6), W0 = nth_key(0, 0), W1 = nth_key(0, 1), W3 = nth_key(0, 3);
+    reset();
+    memset(omni_shape, 0, sizeof omni_shape);
+    t->p[P_CHRD] = CH_OMNI; t->p[P_VOIC] = VC_CLOSE; song.octave = 0;
+    key_down(W0);
+    bad += check("OMNI: a white key before any button: the C major chord's root, an octave under it (C2)", gate_note(t, 36) && ngated(t) == 1u);
+    key_up(W0);
+    key_down(C);
+    bad += check("OMNI: black key 2 is the C chord: C3 E3 G3", gate_note(t, 48) && gate_note(t, 52) && gate_note(t, 55) && ngated(t) == 3u);
+    key_down(W1);
+    bad += check("  a white key plucks the chord's third (E2) while the chord rings", gate_note(t, 40) && ngated(t) == 4u);
+    key_up(W1); key_up(C);
+    bad += check("  every release ends its own notes", !ngated(t));
+    key_down(G7);
+    bad += check("OMNI: black key 7 is G7 (G3 B3 D4 F4)", gate_note(t, 55) && gate_note(t, 59) && gate_note(t, 62) && gate_note(t, 65) && ngated(t) == 4u);
+    key_up(G7);
+    key_down(W3);
+    bad += check("  the strum plate follows it: white key 4 is the seventh's F, in the octave of the root under (43 + 10 = 53)", gate_note(t, 53) && ngated(t) == 1u);
+    key_up(W3);
+    t->p[P_ROOT] = 2;                                             /* the buttons follow ROOT: D */
+    key_down(C);
+    bad += check("  ROOT D: the I button is D major (D3 F#3 A3)", gate_note(t, 50) && gate_note(t, 54) && gate_note(t, 57));
+    key_up(C);
+    t->p[P_ROOT] = 0;
+    midi(0x90, 60, 100);
+    bad += check("OMNI: MIDI IN plays the note alone, as OFF", gate_note(t, 60) && ngated(t) == 1u);
+    midi(0x80, 60, 0);
+    t->p[P_CHRD] = CH_OMNI;
+    key_down(C);
+    t->p[P_CHRD] = CH_OFF;
+    key_up(C);
+    bad += check("  CHRD changed while held: the release still ends the chord", !ngated(t));
+    t->p[P_CHRD] = CH_OFF;
+    key_down(C);
+    bad += check("OMNI off: the key is one note, as always", ngated(t) == 1u);
+    key_up(C);
+    /* track 4 (the noise track) ignores OMNI */
+    {
+        track_t *t4 = &trk[3];
+        song.sel = 3;
+        t4->p[P_CHRD] = CH_OMNI; t4->p[P_VOICE] = V_POLY;
+        key_down(C);
+        bad += check("OMNI on track 4: no chords, the key is a note", ngated(t4) == 1u);
+        key_up(C);
+        song.sel = 0;
+    }
+    return bad;
+}
+
 int main(void)
 {
-    int bad = theory() + shapes_voicings() + keys() + arp_rec() + midi_in() + kits();
+    int bad = theory() + shapes_voicings() + keys() + arp_rec() + midi_in() + kits() + omni();
     printf("%s\n", bad ? "CHORD TEST FAILED" : "chord keys test passed");
     return bad != 0;
 }

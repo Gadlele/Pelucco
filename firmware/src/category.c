@@ -10,8 +10,9 @@
 #define FELUCCA_CATEGORY 1
 enum { CAT_NONE, CAT_BASS, CAT_LEAD, CAT_PAD, CAT_PLUCK, CAT_KEYS, CAT_DRUM, CAT_FX, CAT_OTHER, CAT_N };
 static const char *const CAT_NAME[CAT_N] = {"-", "BASS", "LEAD", "PAD", "PLUCK", "KEYS", "DRUM", "FX", "OTHER"};
-/* the category a sound without one is listed under: a kit (DRUM, SLICE: engines 10, 13) DRUM, any other OTHER */
-static uint32_t cat_of_engine(uint32_t e) { return e == 10u || e == 13u ? CAT_DRUM : CAT_OTHER; }
+/* the category a sound without one is listed under: a kit (DRUM, SLICE: engines 10, 13) DRUM, any other OTHER (BELL,
+ * engine 13 without SLICE: OTHER) */
+static uint32_t cat_of_engine(uint32_t e) { return e == 10u || (e == 13u && FELUCCA_SLICE) ? CAT_DRUM : CAT_OTHER; }
 
 #ifndef UP_HOST
 /* the factory presets' categories: per engine number (engines.c ENGINES[]), a letter per preset in its order (B BASS,
@@ -23,7 +24,11 @@ static const char *const PRESET_CAT[16] = {
                                   * PLUCK, BRASS, WIND, STRINGS, AIR, DRONE, GLASS PAD, SWELL, HAZE, MOON */
     "",                          /* 1 DIGITAL (retired) */
     "LKPLUU",                    /* 2 PHASE: BRASS, ORGAN, STRING, RESO, BELL, WIRE */
+#if FELUCCA_LOFI
     "LBLLL",                     /* 3 LOFI: PULSE LD, WAVE BASS, ARP 8BIT, WAVE LEAD, STEP LEAD */
+#else
+    "FFFFFFFFFFFF",              /* 3 AMBI: SEA, SURF, STORM, WIND, STREAM, HISS, FIRE, VINYL, RAIN, STORM RAIN, CAVE DRIP, CRICKETS */
+#endif
     "KKLL",                      /* 4 SAMPLE: PIANO, (PIANO: the retired TRANH's alias), FLUTE, SAX */
     "PLBF",                      /* 5 VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
     "BLLUP",                     /* 6 TRIO: FAT BASS, ARP LEAD, SYNC LEAD, RING BELL, CHIP CHOIR */
@@ -34,7 +39,11 @@ static const char *const PRESET_CAT[16] = {
     "D",                         /* 10 DRUM: DRUM KIT */
     "FFFFFFFFFFFF",              /* 11 NOISE: WIND, RAIN, ARCADE, METAL, SEA, SURF, FIRE, VINYL, STREAM, STORM, DRIPS, HISS */
     "KUBLPUKU",                  /* 12 FM6: TINE EP, BELL, FM BASS, BRASS, PAD, MARIMBA, ORGAN, PLUCK */
+#if FELUCCA_SLICE
     "DD",                        /* 13 SLICE: CHOP, STUTTER */
+#else
+    "UUUKUFPK",                  /* 13 BELL: BELL, GLASS, CHIME, MUSBOX, TUBULAR, GONG, SHIMMER, PURE */
+#endif
 };
 static uint32_t preset_cat(uint32_t e, uint32_t k)    /* factory preset k of engine e */
 {
