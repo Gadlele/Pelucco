@@ -374,6 +374,12 @@ Drum kits and incoming MIDI keep their own note mapping.
 Press **SCL** again for the **CHORD** page: CHRD picks the chord keys (OFF, the scale's triads or
 sevenths, or a fixed shape) and VOIC the voicing.
 
+**OMNI** (Pelucco, after [FoMni](https://github.com/charlesvestal/fm1-fomni)), the last CHRD value, on tracks 1 to 3: the
+keys become an Omnichord. The 11 black keys are chord buttons (F C G Dm Am Em G7 E7 D7 Bb A7 in C, following the
+track's ROOT), each sounding its chord, in the VOIC voicing, while held. The 16 white keys are the strum plate: one
+note of the current chord each, root, third, fifth and again an octave up. OFF is the classic keyboard; MIDI IN
+always plays single notes.
+
 ## Layout
 
 | Path | What |

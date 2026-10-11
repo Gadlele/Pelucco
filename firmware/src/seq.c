@@ -698,9 +698,10 @@ static __attribute__((noinline)) void perf_key_remap(void)
  * holds already sounds: it is not started again (nor sent to MIDI OUT); the key keeps its notes */
 static void key_on(uint32_t k, track_t *t)
 {
-    uint32_t n = chord_build(t, kb_note[k], kb_chord[k]), i, mc = trk_midi_ch(trk_index(t));
+    uint32_t omni = omni_on(t);
+    uint32_t n = omni ? omni_keys(t, k, kb_chord[k]) : chord_build(t, kb_note[k], kb_chord[k]), i, mc = trk_midi_ch(trk_index(t));
     kb_chn[k] = 0;
-    in_key = (uint8_t)(k + 1u);                     /* (the arp keeps the key: arp_add) */
+    in_key = omni ? 0u : (uint8_t)(k + 1u);         /* (the arp keeps the key: arp_add; an OMNI note is its own, not a key's) */
     for (i = 0; i < n; i++) {
         uint32_t x = kb_chord[k][i];
         if (midi_local_held(t, x))
@@ -710,7 +711,7 @@ static void key_on(uint32_t k, track_t *t)
     }
     in_key = 0;
     kb_chn[k] = (uint8_t)n;
-    last_note = kb_note[k];                         /* (step entry, the SAMPLE zone: the key's note) */
+    last_note = omni && n ? kb_chord[k][0] : kb_note[k];   /* (step entry, the SAMPLE zone: the key's note) */
 }
 
 /* key k is up: the notes it started end, but those another key still holds */
@@ -784,6 +785,8 @@ static void keyboard_block(void)
                 kb_note[k] = KB_SILENT;
             else if (song.grid == 1u)             /* the DRUM grid: a lane key plays its lane, the rest are the UI's */
                 kb_note[k] = grid_key_note(k);
+            else if (omni_on(&trk[kb_trk[k]]))    /* OMNI: every key sounds (omni_keys); a note for the rest */
+                kb_note[k] = 60;
             else
                 kb_note[k] = (uint8_t)kb_map(&trk[kb_trk[k]], k);
             if (kb_note[k] == KB_SILENT)
