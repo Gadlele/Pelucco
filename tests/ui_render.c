@@ -1566,7 +1566,7 @@ static void draw(int s)
         return;
     }
     if (s == S_SPLASH) {                          /* the power-on splash (main.c, before the UI): its two lines (Pelucco) */
-        static const char WANT[] = "PELUCCO|a Felucca fork";
+        static const char WANT[] = "PELUCCO|by Gadlele";
         splash_seen[0] = 0;
         in_splash = 1;
         draw_splash();

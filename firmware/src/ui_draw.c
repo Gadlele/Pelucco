@@ -1220,12 +1220,12 @@ static void draw_columns(void)
 
 /* The power-on splash (main.c fm1_main, web/emu felucca_web.c; Pelucco's own): the name PELUCCO in the middle of the
  * screen among stylised clouds, flat shapes in two tones (RAISE for the near ones, LINE for the far), above and
- * below it, none behind the text; under it, small, that it is a fork of Felucca. Drawn in three bands of the
+ * below it, none behind the text; under it, small, "by Gadlele". Drawn in three bands of the
  * canvas, 80 rows each (the clouds are drawn in every band they reach, clipped to it). In the saved palette
  * (settings_init before it) */
 #define SPL_BAND 80
 #define SPL_NAME_Y 100                              /* the name's line (AF_L, 35 px) */
-static const char SPLASH_NAME[] = "PELUCCO", SPLASH_SUB[] = "a Felucca fork";
+static const char SPLASH_NAME[] = "PELUCCO", SPLASH_SUB[] = "by Gadlele";
 /* a cloud: a flat base (two end discs and the strip between) with two bumps. u is its unit (the base's half height);
  * cx, cy the middle of the base's line, in screen coordinates; oy the band's top */
 static void splash_cloud(int32_t cx, int32_t cy, int32_t u, int32_t oy, uint16_t c)
