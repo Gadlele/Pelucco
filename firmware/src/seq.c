@@ -1105,7 +1105,62 @@ static void gen_reset(gen_t *g, uint32_t seed)
     g->ok = 1;
     g->c = 0;
 }
-static void gen_restart(uint32_t k) { gen[k].ok = 0; }
+/* The Pad's progression (Pelucco): with DENS above 0 the Pad (track 1) plays chords by itself, I, IV, V and vi of its ROOT /
+ * SCALE (the diatonic triads, in the VOIC voicing), instead of reading its steps. Every BARS bars (16 steps each, at the
+ * track's DIV) a chord is chosen, and it sounds with chance DENS (the rest are silence, the tail rings on). The chord is
+ * struck once and held across the bars (ties), so a slow ATK swells and REL carries it into the next */
+#define PROG_TRACKS 1u
+static uint16_t prog_c[NTRK];                      /* steps since the transport started */
+static uint8_t prog_deg[NTRK] = {0}, prog_play[NTRK];
+static inline uint32_t prog_on(const track_t *t)
+{
+    return t->p[P_PDEN] > 0 && trk_index(t) < PROG_TRACKS && !chord_kit(t);
+}
+static void gen_restart(uint32_t k) { gen[k].ok = 0; prog_c[k] = 0; prog_play[k] = 0; prog_deg[k] = 0xFFu; }
+static __attribute__((noinline)) void prog_step(track_t *t, uint32_t idx, uint32_t period)
+{
+    static const uint8_t DEG[4] = {0, 3, 4, 5};    /* I IV V vi: scale degrees, from 0 */
+    uint32_t ti = trk_index(t), len = 16u * (uint32_t)clamp(t->p[P_PLEN], 1, 8), c = prog_c[ti]++, pos = c % len;
+    step_t st;
+    memset(&st, 0, sizeof st);
+    st.time = ST_TIE;
+    if (!pos) {                                     /* a chord starts, or a bar group of silence */
+        uint32_t r, d, mask = scale_mask(t), deg[12], n = 0, i;
+        prog_play[ti] = (uint8_t)(rng() % 100u < (uint32_t)t->p[P_PDEN]);
+        if (!prog_play[ti])
+            return;
+        r = rng() % 100u;
+        d = r < 40u ? 0u : r < 65u ? 1u : r < 85u ? 2u : 3u;     /* I most, then IV, V, vi */
+        if (d == prog_deg[ti] && rng() % 100u < 60u) {           /* seldom the same chord twice */
+            r = rng() % 100u;
+            d = r < 40u ? 0u : r < 65u ? 1u : r < 85u ? 2u : 3u;
+        }
+        prog_deg[ti] = (uint8_t)d;
+        if (mask == 0xFFFu)
+            mask = SCALE_MASK[1];                   /* CHR: the major scale of ROOT */
+        for (i = 0; i < 12u; i++)
+            if ((mask >> i) & 1u)
+                deg[n++] = i;
+        {
+            int32_t root = 48 + t->p[P_ROOT] + (int32_t)deg[DEG[d] % n] + 12 * (int32_t)song.octave + t->p[P_TRANS];
+            uint8_t out[CHORD_MAX];
+            uint32_t m;
+            prog_mode = CH_DIA3;
+            m = chord_build(t, (uint32_t)clamp(root, 0, 127), out);
+            prog_mode = 0;
+            for (i = 0; i < m && i < 4u; i++)
+                st.note[i] = out[i];
+            st.n = (uint8_t)(m < 4u ? m : 4u);
+            st.time = ST_NOTE;
+            st.vel = 90;
+        }
+    } else if (!prog_play[ti]) {
+        return;
+    }
+    if (pos != len - 1u)
+        st.flags = SF_SLIDE;                        /* held to the next step; the last one lets go at its GATE */
+    seq_step(t, &st, idx, period, SEQ_ROLLED);
+}
 static __attribute__((noinline)) void gen_step(track_t *t, uint32_t idx, uint32_t period)
 {
     gen_t *g = &gen[trk_index(t)];
@@ -1151,6 +1206,12 @@ static __attribute__((noinline)) void seq_play(track_t *t, uint32_t idx, uint32_
     const step_t *s = &seq_steps(t)[idx];
     const motion_store_t *m = chain_motion(t);
     uint32_t skip = SEQ_ROLLED, i, k;
+    if (prog_on(t)) {                               /* the Pad's progression: chords by itself, not the steps */
+        if (m)
+            motion_step(t, idx, m, 1u);
+        prog_step(t, idx, period);
+        return;
+    }
     if (gen_on(t)) {                                /* BELL's generator: the loops, not the steps */
         if (m)
             motion_step(t, idx, m, 1u);

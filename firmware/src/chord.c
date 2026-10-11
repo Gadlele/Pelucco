@@ -31,6 +31,7 @@ static const int8_t CHORD_SHAPE[CH_POW - CH_MAJ + 1][CHORD_MAX] = {
 
 static uint8_t omni_mod;                         /* OMNI: ENV (bit 0, minor) and LFO (bit 1, seventh) held, as ui_input.c sets it */
 static struct { uint8_t n, note[CHORD_MAX]; } omni_latch[NTRK];   /* OMNI H: the chord kept after its button is let go */
+static uint8_t prog_mode;                        /* while the Pad's progression builds a chord (seq.c prog_step): its shape, else 0 */
 static uint8_t omni_mode;                        /* while an OMNI button builds its chord (chord_make): its shape, else 0 */
 static uint8_t omni_root[NTRK], omni_shape[NTRK];   /* each track's current OMNI chord: root note, shape (0: none yet) */
 static uint8_t kb_chord[27][CHORD_MAX], kb_chn[27];   /* the notes key k started (kb_chn 0: none) */
@@ -90,6 +91,8 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
     *maskp = 0;
     if (mode == CH_OMNI || mode == CH_OMNIH)            /* (only an OMNI button's chord; every other source plays the note) */
         mode = omni_mode;
+    if (prog_mode)
+        mode = prog_mode;
     if (!mode || mode > CH_POW || chord_kit(t)) {
         out[0] = (uint8_t)root;
         return 1;

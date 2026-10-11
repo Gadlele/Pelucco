@@ -409,6 +409,13 @@ track's ROOT), each sounding its chord, in the VOIC voicing, while held. The 16 
 note of the current chord each, root, third, fifth and again an octave up. OFF is the classic keyboard; MIDI IN
 always plays single notes.
 
+**The Pad plays itself** (Pelucco): SCL > CHORD has two more knobs, **DENS** and **BARS**. With DENS above 0 the Pad stops reading
+its steps and plays chords by itself, the diatonic triads **I, IV, V and vi** of its ROOT and SCALE (in the VOIC voicing; in a
+minor scale they are i, iv, v and VI), with I the most often and the same chord seldom twice. A chord is struck once and held for
+BARS bars of 16 steps (at the track's DIV), so a slow ATK swells and a long REL carries it into the next one. DENS is the chance
+that a bar group has its chord: 100 is a chord all the time, lower leaves silences where the reverb rings. DENS starts at 0, so
+nothing changes until you turn it. The keys still play over it as ever.
+
 OMNI also has FoMni's modifiers: **ENV held** makes the button's chord minor, **LFO held** adds the seventh (C7 from a major
 button, Cm7 from a minor one), both together a minor seventh; ENV and LFO then open no page when let go (they do alone). The
 white keys follow the chord as played. The CHRD value after OMNI, **OMNI H**, is OMNI with a **chord hold**: the chord of a
