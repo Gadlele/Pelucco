@@ -311,6 +311,31 @@ static void cv_rrect(int32_t x, int32_t y, int32_t w, int32_t h, int32_t r, uint
         }
 }
 
+/* a filled disc of radius r at (cx, cy) (the corner of pixel cx, cy), the edge anti-aliased (4 x 4 samples a
+ * pixel) against what is already on the canvas, so discs of one colour join into one shape: the splash's clouds
+ * (Pelucco). Clipped to the canvas */
+static void cv_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)
+{
+    int32_t x, y, sx, sy, x0 = cx - r, x1 = cx + r - 1, y0 = cy - r, y1 = cy + r - 1;
+    if (x0 < 0) x0 = 0;
+    if (x1 > (int32_t)cv_w - 1) x1 = (int32_t)cv_w - 1;
+    if (y0 + cv_oy < 0) y0 = -cv_oy;
+    if (y1 + cv_oy > (int32_t)cv_h - 1) y1 = (int32_t)cv_h - 1 - cv_oy;
+    for (y = y0; y <= y1; y++)
+        for (x = x0; x <= x1; x++) {
+            int32_t n = 0;
+            for (sy = 0; sy < 4; sy++)
+                for (sx = 0; sx < 4; sx++) {
+                    int32_t dx = (x - cx) * 8 + sx * 2 + 1, dy = (y - cy) * 8 + sy * 2 + 1;   /* 1/8 px */
+                    n += dx * dx + dy * dy <= r * r * 64;
+                }
+            if (n >= 16)
+                cv_pset(x, y, c);
+            else if (n > 0)
+                cv_pset(x, y, ux_mix(swap16(cv_px[(uint32_t)(y + cv_oy) * cv_w + (uint32_t)x]), c, n * 100 / 16));
+        }
+}
+
 /* ------------------------------------------------- 4-bit alpha blit --- */
 /* coverage curves: a little heavier for light ink on dark, lighter for dark ink on light */
 static const uint8_t CURVE_DARK[16] = {0, 24, 43, 62, 80, 97, 114, 130, 147, 163, 178, 194, 210, 225, 240, 255};
