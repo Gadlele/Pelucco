@@ -1396,6 +1396,8 @@ static uint32_t sound_cat(uint32_t e, uint32_t k) { return e == NENGINES ? up_ca
 static int list_keep(uint32_t e, uint32_t k)
 {
     uint32_t m = list_mode();
+    if (!eng_allowed(song.sel, e == NENGINES ? up_engine(k) : e))     /* (Pelucco: Echoes BELL, Noise noise) */
+        return 0;
     return m == 1u ? favorite_has(e, k) : m ? sound_cat(e, k) == m - 1u : 1;
 }
 /* the category of the sound track t plays: its user preset's, else its factory preset's (the NAME screen's default) */
@@ -1408,7 +1410,7 @@ static uint32_t track_cat(const track_t *t)
 static uint32_t preset_pos(uint32_t *total)
 {
     uint32_t all, current = preset_all_pos(&all), n = 0, pos = 0xFFFFFFFFu;
-    if (!list_mode()) { *total = all; return current; }
+    if (!list_mode() && !eng_limited(song.sel)) { *total = all; return current; }
     for (uint32_t i = 0; i < all; i++) {
         uint32_t k, e = preset_all_at(i, &k);
         if (!list_keep(e, k)) continue;
@@ -1421,7 +1423,7 @@ static uint32_t preset_pos(uint32_t *total)
 static uint32_t preset_at(uint32_t n, uint32_t *k)
 {
     uint32_t all;
-    if (!list_mode()) return preset_all_at(n, k);
+    if (!list_mode() && !eng_limited(song.sel)) return preset_all_at(n, k);
     preset_all_pos(&all);
     for (uint32_t i = 0; i < all; i++) {
         uint32_t e = preset_all_at(i, k);

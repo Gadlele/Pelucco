@@ -3861,6 +3861,7 @@ static uint32_t black(uint32_t b) { return key_at(1, b); }
 static void lay_combo(uint32_t btn, uint32_t k) { btn_down(btn); key_down(k); frame(); }
 static void oct_back(void) { btn_down(B_OCTDN); frame(); btn_up(B_OCTDN); frame(); }
 
+static uint32_t eng_count_for(uint32_t ti);
 static int test_quick_layers(void)
 {
     static const uint8_t LB[3] = {B_GLO, B_SCL, B_EDIT};
@@ -4020,16 +4021,16 @@ static int test_quick_layers(void)
     btn_down(B_EDIT); frames(480);
     for (i = 0; i < LY_INIT; i++) {
         key_down(white(i)); key_up(white(i)); frame();
-        a += i < NENG_SHOWN ? TSEL->eng_req == eng_vis(i) : 0u;
+        a += i < NENG_SHOWN && eng_allowed(song.sel, eng_vis(i)) ? TSEL->eng_req == eng_vis(i) : 0u;   /* (a part's own engines) */
         ok &= eng_ok(TSEL->eng_req);
     }
     btn_up(B_EDIT); frame();
     bad += check("  every engine one can pick has its white key from F3 (NENG_SHOWN, not a fixed count; never DIGITAL)",
-                 ok && a == NENG_SHOWN);
+                 ok && a == eng_count_for(song.sel));
     set_engine_of(TSEL, 0);
-    lay_combo(B_EDIT, white(eng_rank(3))); key_up(white(eng_rank(3))); frame();
+    lay_combo(B_EDIT, white(eng_rank(2))); key_up(white(eng_rank(2))); frame();
     turn(EN_K2, 1);
-    ok = TSEL->eng_req == 3u && TSEL->preset == 1u;
+    ok = TSEL->eng_req == 2u && TSEL->preset == 1u;
     turn(EN_K3, 1);
     ok &= preset_favorite();
     oct_back();
@@ -5011,12 +5012,13 @@ static int test_fm4_retired(void)
     bad += check("PRESETS: the list holds every engine's presets but DIGITAL's", seen == all && NENG_SHOWN == NENGINES - 1u);
     go_page(GR_BROWSE);
     set_engine_of(TSEL, 0);
-    for (i = 0, seen = 0; i < NENG_SHOWN; i++) {
+    for (i = 0, seen = 0; i < eng_count_for(song.sel); i++) {
         turn(EN_K2, 1);
         seen |= 1u << TSEL->eng_req;
     }
-    bad += check("PRESETS KNOB 2: the engines in order, DIGITAL skipped, back to the first",
-                 seen == all && TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_FM6 && eng_step(ENGI_FM6, 1) == 2u &&
+    bad += check("PRESETS KNOB 2: the engines in order, DIGITAL skipped, back to the first (Pad: no bells, no noises)",
+                 seen == (all & ~(1u << ENGI_NOISE) & ~(FELUCCA_BELL ? 1u << ENGI_BELL : 0u) & ~(FELUCCA_AMBI ? 1u << ENGI_AMBI : 0u)) &&
+                 TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_FM6 && eng_step(ENGI_FM6, 1) == 2u &&
                  eng_step(ENGI_FM6, -1) == 0u && eng_step(0, -1) == ENGI_DRUM);
     {   /* the display order (engines.c ENGINE_ORDER): every engine one can pick once; the PRESETS list follows it */
         static const char *const ORDER[] = {"ANALOG", "FM6", "PHASE", FELUCCA_LOFI ? "LOFI" : "AMBI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN",
@@ -5739,6 +5741,75 @@ static uint64_t scr_session_fork(uint32_t setting, uint32_t *flags)   /* from th
 }
 /* Pelucco: the four tracks are parts, PAD LEAD ECHOES NOISE; HOME's four knobs follow the part (ui.c home_id): the PAD's
  * are its engine's first, ATK, REL, REV; ECHOES (on BELL) DENS, EVOLVE, DLY, REV; LEAD and NOISE the engine's own */
+static uint32_t eng_count_for(uint32_t ti)          /* how many engines part ti offers */
+{
+    uint32_t n = 0, r;
+    for (r = 0; r < NENG_SHOWN; r++)
+        n += eng_allowed(ti, eng_vis(r));
+    return n;
+}
+/* Pelucco: Echoes browses BELL only, Noise the noise engines only (engines.c eng_allowed); Pad and Lead everything */
+static int test_part_sounds(void)
+{
+    int bad = 0, ok = 1;
+    uint32_t total, all, i, k, k2, e, seen[NENGINES];
+    ui_power_on();
+    memset(up_bank, 0, sizeof up_bank);
+    memset(&favorites, 0, sizeof favorites);
+    song.sel = 0;
+    preset_all_pos(&all);
+    for (k = 0; k < 2u; k++) {
+        song.sel = k;
+        preset_pos(&total);
+        for (i = 0; i < total; i++) {
+            e = preset_at(i, &k2);
+            ok &= e == NENGINES || (e != ENGI_NOISE && e != ENGI_BELL && e != ENGI_AMBI);
+        }
+        ok &= total > 60u && total < all;
+    }
+    song.sel = 0;
+    bad += check("part sounds: Pad and Lead list every engine but the bells and the noises", ok);
+    if (FELUCCA_BELL) {
+        song.sel = 2;
+        set_engine_of(TSEL, ENGI_BELL);
+        preset_pos(&total);
+        memset(seen, 0, sizeof seen);
+        for (i = 0; i < total; i++) {
+            e = preset_at(i, &k);
+            ok &= e < NENGINES && e == ENGI_BELL && k < ENGINES[e]->npresets;
+        }
+        bad += check("part sounds: Echoes lists the bells only", ok && total == preset_shown(ENGI_BELL) && total < all);
+        for (i = 0; i < total + 2u; i++)
+            preset_step(1);
+        ok = TSEL->eng_req == ENGI_BELL;
+        select_engine(eng_step_for(2, ENGI_BELL, 1));
+        ok &= eng_step_for(2, ENGI_BELL, 1) == ENGI_BELL && eng_step_for(2, ENGI_BELL, -1) == ENGI_BELL;
+        bad += check("part sounds: Echoes stays on BELL (PRESETS and the ENG knob)", ok && TSEL->eng_req == ENGI_BELL);
+    }
+    song.sel = 3;
+    set_engine_of(TSEL, ENGI_NOISE);
+    preset_pos(&total);
+    memset(seen, 0, sizeof seen);
+    for (i = 0; i < total; i++) {
+        e = preset_at(i, &k);
+        ok &= e < NENGINES && (e == ENGI_NOISE || (FELUCCA_AMBI && e == ENGI_AMBI));
+        if (e < NENGINES) seen[e]++;
+    }
+    bad += check("part sounds: Noise lists the NOISE and AMBI sounds only",
+                 ok && seen[ENGI_NOISE] == preset_shown(ENGI_NOISE) && (!FELUCCA_AMBI || seen[ENGI_AMBI] == preset_shown(ENGI_AMBI)) &&
+                 total == seen[ENGI_NOISE] + seen[ENGI_AMBI]);
+    ok = 1;
+    for (i = 0; i < total + 3u; i++) {
+        preset_step(1);
+        ok &= TSEL->eng_req == ENGI_NOISE || (FELUCCA_AMBI && TSEL->eng_req == ENGI_AMBI);
+    }
+    ok &= eng_step_for(3, ENGI_NOISE, 1) == (FELUCCA_AMBI ? ENGI_AMBI : ENGI_NOISE) &&
+          eng_step_for(3, ENGI_AMBI, 1) == ENGI_NOISE;
+    bad += check("part sounds: Noise PRESETS and the ENG knob stay on the noise engines", ok);
+    song.sel = 0;
+    return bad;
+}
+
 static int test_roles(void)
 {
     int bad = 0, ok;
@@ -9506,8 +9577,8 @@ static int test_edit_quick_actions(void)
 
     /* the white keys as before (an engine pick from DRUM: the sound load clears the mutes) */
     btn_down(B_EDIT); frames(500);
-    key_down(white(0)); frame(); key_up(white(0)); frame();
-    ok = TSEL->eng_req == eng_vis(0) && !drum_mute[3] && eqa_count(TSEL) == 0u;
+    key_down(white(eng_rank(ENGI_NOISE))); frame(); key_up(white(eng_rank(ENGI_NOISE))); frame();   /* (T4 takes noise engines only) */
+    ok = TSEL->eng_req == ENGI_NOISE && !drum_mute[3] && eqa_count(TSEL) == 0u;
     a = leds_at(0); b2 = leds_at(250);
     for (i = 0; i < 11u; i++)                         /* (ANALOG: no actions, the black keys dark and inert) */
         ok &= !(((a | b2) >> black(i)) & 1u);
@@ -9725,6 +9796,7 @@ int main(void)
     bad += test_idle_leds();
     bad += test_momentary();
     bad += test_roles();
+    bad += test_part_sounds();
     bad += test_fm6_charts();
     bad += test_fm6_ops();
     bad += test_home_tracks();
