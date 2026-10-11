@@ -208,7 +208,7 @@ int main(void)
                  str_eq(ENGINES[7]->name, "WHEEL") && str_eq(ENGINES[6]->name, "TRIO") && NENGINES > 8);
     bad += check("FUN2 -> FUN6: the drum track -> part 4, DRUM (its kit on load), steps kept (lanes as hits)",
                  q.parts == NPART && q.t[3].engine == ENGI_DRUM && str_eq(ENGINES[ENGI_DRUM]->name, "DRUM") &&
-                 TRK_DEF[3][0] == ENGI_DRUM && q.t[3].preset == PROJ_DEF_KEEP &&
+                 q.t[3].preset == PROJ_DEF_KEEP &&
                  steps_grid_same(q.t[3].step, v2.t[3].step));
 
     /* format 3 (1.0, four parts), as written before the modulation matrix */
@@ -631,8 +631,8 @@ int main(void)
         w1.sum = proj_hash(&w1, sizeof w1 - 4u);
         memcpy(&buf, &w1, sizeof w1);
         ok = proj_import(&c, &buf, (int)sizeof w1) && c.t[0].engine == ENGI_FM6 && c.t[0].preset == 1u &&
-             c.t[1].engine == ENGI_FM6 && c.t[1].preset == PROJ_DEF_SOUND;   /* (track 2: the power-on FM6 PAD) */
-        bad += check("FUN1 with DIGITAL: track 1 FM6 (BELL), track 2 the power-on sound (FM6 now)", ok);
+             c.t[1].engine == trk_def_engine(1) && c.t[1].preset == PROJ_DEF_SOUND;   /* (track 2: the power-on sound) */
+        bad += check("FUN1 with DIGITAL: track 1 FM6 (BELL), track 2 the power-on sound", ok);
 #undef FM4_OK
     }
 #endif

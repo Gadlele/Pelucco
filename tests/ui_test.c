@@ -162,6 +162,9 @@ static int check(const char *what, int ok)
     return ok ? 0 : 1;
 }
 
+/* The parts the harness starts with: the first sounds of the suite's tests (bass, pad, bells, drums), not Pelucco's power-on
+ * parts (TRK_DEF: PAD, LEAD, ECHOES, NOISE), so that what the tests assume of a track does not move with the factory sounds */
+static const uint8_t TEST_TRK[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {FELUCCA_BELL ? ENGI_BELL : 3, 0, 0}, {ENGI_DRUM, 0, 0}};
 /* main.c felucca_init */
 static void ui_power_on(void)
 {
@@ -191,14 +194,14 @@ static void ui_power_on(void)
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         track_defaults(t);
-        set_engine_of(t, TRK_DEF[i][0]);
-        apply_preset_to(t, TRK_DEF[i][1]);
+        set_engine_of(t, TEST_TRK[i][0]);
+        apply_preset_to(t, TEST_TRK[i][1]);
         t->engine = t->eng_req;
         track_defaults_steps(t);
-        if (TRK_DEF[i][2])
-            load_pat16(t, PATTERNS[TRK_DEF[i][2] - 1u].note, PATTERNS[TRK_DEF[i][2] - 1u].flags);
+        if (TEST_TRK[i][2])
+            load_pat16(t, PATTERNS[TEST_TRK[i][2] - 1u].note, PATTERNS[TEST_TRK[i][2] - 1u].flags);
         pat_sig[i] = steps_sig(t);
-        pat_last[i] = TRK_DEF[i][2];
+        pat_last[i] = TEST_TRK[i][2];
     }
     undo_depth--;
     song.sel = 0;
@@ -407,7 +410,7 @@ static int test_sound_loads(void)
     for (i = 0; i < NTRK; i++)
         empty &= (uint32_t)seq_is_empty(&trk[i]);
     bad += check("power-on: the four sounds, every sequencer empty, no undo copy", empty && undo.trk == 0 && undo_depth == 0 &&
-                 trk[3].eng_req == ENGI_DRUM && trk[3].preset == 0u && trk[0].preset == TRK_DEF[0][1]);
+                 trk[3].eng_req == ENGI_DRUM && trk[3].preset == 0u && trk[0].preset == TEST_TRK[0][1]);
     my_steps(t);
     t->p[P_E0 + 1] = 77;                          /* a sound edit */
     t->p[P_AMODE] = 2;                            /* and the track's own settings */
@@ -4997,7 +5000,7 @@ static int test_fm4_retired(void)
     int16_t p[P_COUNT];
     uint8_t v[FP_SIZE + 1u];
     ui_power_on();
-    bad += check("power-on: track 2 is FM6 PAD (TRK_DEF, was DIGITAL PAD)", trk[1].eng_req == ENGI_FM6 &&
+    bad += check("power-on: track 2 is FM6 PAD (TEST_TRK, was DIGITAL PAD)", trk[1].eng_req == ENGI_FM6 &&
                  str_eq(ENGINES[ENGI_FM6]->presets[trk[1].preset].name, "PAD"));
     preset_all_pos(&total);
     for (i = 0; i < total; i++) {
@@ -5760,6 +5763,22 @@ static int test_roles(void)
     trk[0].eng_req = ENGI_DRUM;
     ok = home_id(&trk[0], 1) == ENGINES[ENGI_DRUM]->knob[1];
     bad += check("  PAD on a kit: the kit's four", ok);
+    /* the parts at power-on (TRK_DEF, main.c): a FM6 pad, an ANALOG lead, the bells, the AMBI sea on its drone */
+    ok = TRK_DEF[0][0] == ENGI_FM6 && str_eq(ENGINES[ENGI_FM6]->presets[TRK_DEF[0][1]].name, "PAD") &&
+         TRK_DEF[1][0] == 0 && str_eq(ENGINES[0]->presets[TRK_DEF[1][1]].name, "SAW LEAD") &&
+         TRK_DEF[2][0] == (FELUCCA_BELL ? ENGI_BELL : 3) && TRK_DEF[3][0] == 3 &&
+         (FELUCCA_LOFI || (str_eq(ENGINES[3]->name, "AMBI") && str_eq(ENGINES[3]->presets[TRK_DEF[3][1]].name, "SEA"))) &&
+         TRK_DEF[3][2] == 14 && str_eq(PATTERNS[13].name, "DRONE");
+    bad += check("  power-on parts: FM6 PAD, ANALOG SAW LEAD, the bells, AMBI SEA on the DRONE pattern", ok);
+    {   /* as main.c felucca_init loads the noise track: its pattern is the held note, the others' are empty */
+        track_t *t = &trk[3];
+        ui_power_on();
+        set_engine_of(t, TRK_DEF[3][0]);
+        apply_preset_to(t, TRK_DEF[3][1]);
+        load_pat16(t, PATTERNS[TRK_DEF[3][2] - 1u].note, PATTERNS[TRK_DEF[3][2] - 1u].flags);
+        ok = t->step[0].n == 1u && t->step[0].note[0] == 48 && t->step[1].time == ST_TIE;
+        bad += check("  the NOISE track's DRONE: a C3 held through the pattern", ok);
+    }
     ui_power_on();
     ui.home = 1;
     song.sel = 2;
@@ -6933,7 +6952,7 @@ static int test_layer_lock(void)
     go_title("ENV"); frame();
     press(B_EDIT); press(B_EDIT); frames(100);
     turn(EN_K1, 1);
-    ok = TSEL->eng_req != trk[1].eng_req || TSEL->eng_req != TRK_DEF[0][0];
+    ok = TSEL->eng_req != trk[1].eng_req || TSEL->eng_req != TEST_TRK[0][0];
     ok &= str_eq(cur_page()->title, "ENV") && ui.lock == LAYER_EDIT;
     key_down(white(LY_INIT)); frame(); key_up(white(LY_INIT)); frame();   /* INIT: the dialog closes it */
     ok &= ui.confirm == CF_INIT_SOUND && !ui.lock && !ui.layer;

@@ -217,7 +217,7 @@ static int tracks_demo(const char *dir, const char *name, uint32_t solo)
     host_tracks_init();
     song.g[G_BPM] = 120;
     host_preset(t1, 0, 4);
-    host_preset(t2, TRK_DEF[1][0], TRK_DEF[1][1]);
+    host_preset(t2, ENGI_FM6, 4);                    /* (the pad the demo was made with) */
     host_preset(t3, 3, 0);
     host_drums(td);                                /* DRUM KIT (SAMPLE PERC until 1.0.2) */
     for (i = 0; i < 16u; i++) {

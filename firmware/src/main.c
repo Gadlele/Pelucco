@@ -110,6 +110,8 @@ static void felucca_init(void)
         set_engine_of(t, TRK_DEF[i][0]);
         apply_preset_to(t, TRK_DEF[i][1]);    /* with its sends */
         t->engine = t->eng_req;
+        if (i == 0u && !chord_kit(t))
+            t->p[P_CHRD] = CH_OMNI;           /* Pelucco: the PAD plays as an Omnichord from power-on */
         eng_mem_claim(t);                     /* (zeros already: no note can come before) */
         track_defaults_steps(t);              /* (a sound load never touches them) */
         if (TRK_DEF[i][2])
