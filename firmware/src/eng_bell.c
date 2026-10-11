@@ -66,7 +66,13 @@ static const preset_t BELL_PRESETS[] = {
     /* generative: DENS EVOLVE RANGE SEED (a long AMBI reverb and a slow DIV make them) */
     {"RAIN", {4, 40, 60, 6, 30, 25, 1, 3}, {0, 100, 0, 90}, 0, 0, FX(0, 20, 45, 85), PAT(7)},
     {"TEMPLE", {1, 85, 70, 5, 18, 15, 2, 11}, {0, 120, 0, 115}, 0, 0, FX(0, 15, 40, 95), PAT(8)},
-    {"SNOWFALL", {6, 55, 90, 10, 45, 40, 1, 27}, {0, 90, 0, 75}, 0, 0, FX(0, 10, 50, 90), PAT(5)},
+    {"SNOWFALL", {6, 55, 90, 10, 45, 40, 1, 27}, {0, 90, 0, 75}, 0, 0, FX(0, 10, 50, 90), PAT(5)},    /* Pelucco: warm and soft, for ambient music (slow attacks, long tails, a lot of reverb) */
+    {"FELT", {2, 15, 85, 4, 25, 20, 1, 5}, {6, 100, 0, 100}, 0, 0, FX(0, 25, 45, 90), PAT(7)},
+    {"LULLABY", {2, 20, 95, 3, 22, 18, 2, 9}, {4, 110, 0, 105}, 0, 0, FX(0, 20, 50, 92), PAT(3)},
+    {"SOFT CHIME", {5, 25, 90, 10, 30, 25, 1, 17}, {4, 105, 0, 100}, 0, 0, FX(0, 30, 45, 88), PAT(7)},
+    {"DEEP BELL", {1, 30, 100, 3, 12, 10, 0, 21}, {4, 118, 0, 112}, 0, 0, FX(0, 15, 40, 95), PAT(8)},
+    {"WARM RAIN", {0, 18, 70, 4, 35, 30, 1, 40}, {4, 100, 0, 95}, 0, 0, FX(0, 20, 50, 90), PAT(7)},
+    {"MOONLIGHT", {0, 12, 85, 6, 20, 15, 2, 14}, {6, 115, 0, 110}, 0, 0, FX(0, 25, 45, 95), PAT(3)},
 };
 
 static const engine_t ENG_BELL = {

@@ -20,20 +20,20 @@ static uint32_t cat_of_engine(uint32_t e) { return e == 10u || (e == 13u && FELU
  * only; SAMPLE's retired PERC, past SMP_NPRESETS): its engine's (cat_of_engine). tests/ui_test.c checks every string
  * against its engine's preset count. A preset's category is a hint for browsing: nothing else reads it */
 static const char *const PRESET_CAT[16] = {
-    "LPBPBKLBULLPPPPPPP",        /* 0 ANALOG: SAW LEAD, SOFT PAD, SQR BASS, PWM STR, ACID, SINE KEY, RAVE, SUB BASS,
+    "LPBPBKLBULLPPPPPPPPPPPPLLLL",       /* 0 ANALOG: SAW LEAD, SOFT PAD, SQR BASS, PWM STR, ACID, SINE KEY, RAVE, SUB BASS,
                                   * PLUCK, BRASS, WIND, STRINGS, AIR, DRONE, GLASS PAD, SWELL, HAZE, MOON */
     "",                          /* 1 DIGITAL (retired) */
-    "LKPLUU",                    /* 2 PHASE: BRASS, ORGAN, STRING, RESO, BELL, WIRE */
+    "LKPLUUP",                 /* 2 PHASE: BRASS, ORGAN, STRING, RESO, BELL, WIRE */
 #if FELUCCA_LOFI
     "LBLLL",                     /* 3 LOFI: PULSE LD, WAVE BASS, ARP 8BIT, WAVE LEAD, STEP LEAD */
 #else
     "FFFFFFFFFFFF",              /* 3 AMBI: SEA, SURF, STORM, WIND, STREAM, HISS, FIRE, VINYL, RAIN, STORM RAIN, CAVE DRIP, CRICKETS */
 #endif
     "KKLL",                      /* 4 SAMPLE: PIANO, (PIANO: the retired TRANH's alias), FLUTE, SAX */
-    "PLBF",                      /* 5 VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
+    "PLBFPP",                  /* 5 VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
     "BLLUP",                     /* 6 TRIO: FAT BASS, ARP LEAD, SYNC LEAD, RING BELL, CHIP CHOIR */
-    "KKKKK",                     /* 7 WHEEL: the organs */
-    "PFPP",                      /* 8 GRAIN: CLOUD PAD, GLITCH, FROZEN, SHIMMER */
+    "KKKKKK",                  /* 7 WHEEL: the organs */
+    "PFPPPP",                  /* 8 GRAIN: CLOUD PAD, GLITCH, FROZEN, SHIMMER */
     "UUUPUDDPU",                 /* 9 PHYS: BELL TREE, MARIMBA, PLUCK, BOWED METAL, KALIMBA, HAND DRUM, TOMS, DRONE
                                   * STRING, HARP */
     "D",                         /* 10 DRUM: DRUM KIT */
@@ -42,7 +42,7 @@ static const char *const PRESET_CAT[16] = {
 #if FELUCCA_SLICE
     "DD",                        /* 13 SLICE: CHOP, STUTTER */
 #else
-    "UUUKUFPKFUU",               /* 13 BELL: BELL, GLASS, CHIME, MUSBOX, TUBULAR, GONG, SHIMMER, PURE, RAIN, TEMPLE, SNOWFALL */
+    "UUUKUFPKFUUUUUUUU",               /* 13 BELL: BELL, GLASS, CHIME, MUSBOX, TUBULAR, GONG, SHIMMER, PURE, RAIN, TEMPLE, SNOWFALL */
 #endif
 };
 static uint32_t preset_cat(uint32_t e, uint32_t k)    /* factory preset k of engine e */

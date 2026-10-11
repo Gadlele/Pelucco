@@ -79,6 +79,10 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
 - **Quick layers:** hold FX, GLO, SCL, EDIT, REC or SEQ for shortcuts on the keys and knobs, or double-tap it to
   keep the layer open; one-step undo (SAVE held); REC on every page; OCT+ confirms, OCT- goes back; what can be
   pressed breathes softly instead of blinking
+- **Warm ambient sounds** (Pelucco): soft, slow presets for the three tonal parts. Pad: ANALOG WARM PAD, TAPE STR, DUSK PAD,
+  SUN PAD, HUSH (a drone), WHEEL AIR ORGAN, VOICE SOFT CHOIR and BREATH, GRAIN WARM CLOUD and SLOW FROST, PHASE WARM STR (attacks of
+  2-6 s, long releases). Lead: ANALOG SOFT LEAD, FLUTE, GLASS LEAD, MELLOW SAW. Echoes: BELL FELT, LULLABY, SOFT CHIME, DEEP BELL,
+  WARM RAIN, MOONLIGHT. Add a little REV (the AMBI type for the longest tails).
 - **Presets:** factory presets, 32 user preset slots and 4 projects, named on the device (an FM6
   sound keeps its own patch in both); user presets get a category, and a project can get a random name; projects
   from every earlier version load. The PRESETS knob changes the sound from every page that is not a list.
