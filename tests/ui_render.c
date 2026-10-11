@@ -1565,35 +1565,24 @@ static void draw(int s)
         setup_show("TURN RIGHT", "ALGORITHM");
         return;
     }
-    if (s == S_SPLASH) {                          /* the power-on splash (main.c, before the UI): its lines, the version
-                                                   * shown FELUCCA_VERSION (run_tests.sh: src/felucca.c's) */
-        static const char WANT[] = "Felucca|" FELUCCA_VERSION "|H\xFCgelton Instruments|with community";
+    if (s == S_SPLASH) {                          /* the power-on splash (main.c, before the UI): its two lines (Pelucco) */
+        static const char WANT[] = "PELUCCO|by Gadlele";
         splash_seen[0] = 0;
         in_splash = 1;
         draw_splash();
         in_splash = 0;
-        {   /* the square whole on the screen (176 x 176 at 32,32, more than the canvas): its edges and square corners
-             * RAISE, BG just outside; its text's ink 16 px in from the left and the top (the bottom: AL_B, the hook) */
-            const int32_t q0 = 32, q1 = 32 + 176 - 1;
-            uint16_t bg = host_screen[0], ra = host_screen[(uint32_t)(q0 + 1) * 240u + (uint32_t)q0 + 1];
-            int32_t i, x, y, ix = 999, iy = 999, bad = ra == bg;
-            for (i = q0 - 1; i <= q1 + 1; i++) {
-                int32_t in = i >= q0 && i <= q1;
-                bad |= host_screen[(uint32_t)(q0 - 1) * 240u + (uint32_t)i] != bg || host_screen[(uint32_t)(q1 + 1) * 240u + (uint32_t)i] != bg
-                    || host_screen[(uint32_t)i * 240u + (uint32_t)(q0 - 1)] != bg || host_screen[(uint32_t)i * 240u + (uint32_t)(q1 + 1)] != bg;
-                if (in)
-                    bad |= host_screen[(uint32_t)q0 * 240u + (uint32_t)i] != ra || host_screen[(uint32_t)q1 * 240u + (uint32_t)i] != ra
-                        || host_screen[(uint32_t)i * 240u + (uint32_t)q0] != ra || host_screen[(uint32_t)i * 240u + (uint32_t)q1] != ra;
-            }
-            for (y = q0; y <= q1; y++)
-                for (x = q0; x <= q1; x++)
-                    if (host_screen[(uint32_t)y * 240u + (uint32_t)x] != ra) {
-                        if (x - q0 < ix) ix = x - q0;
-                        if (y - q0 < iy) iy = y - q0;
+        {   /* the clouds: RAISE pixels (the near clouds) above and below the name (in palettes where TEXT is RAISE too the name
+             * adds to them: only a floor) */
+            uint32_t x, y, up = 0, down = 0, mid = 0; (void)mid;
+            uint16_t ra = host_screen[60u * 240u + 64u];
+            for (y = 0; y < 240u; y++)
+                for (x = 0; x < 240u; x++)
+                    if (host_screen[y * 240u + x] == ra) {
+                        if (y < 96u) up++; else if (y < 150u) mid++; else down++;
                     }
-            if (bad || ix != 16 || iy != 16) {
-                if (rep) fprintf(rep, "FIND %-26s the splash square not whole (edges %s) or its text not 16 px in (left %d, top %d)\n",
-                                 cur_name, bad ? "off" : "ok", (int)ix, (int)iy);
+            if (up < 200u || down < 200u) {
+                if (rep) fprintf(rep, "FIND %-26s the splash clouds missing or behind the name (above %u, below %u)\n",
+                                 cur_name, up, down);
                 nfind++;
             }
         }
@@ -1602,7 +1591,7 @@ static void draw(int s)
             nfind++;
         } else {
             static uint8_t said;
-            if (!said++) printf("ui_render: the splash shows the version " FELUCCA_VERSION " (FELUCCA_VERSION) and its lines\n");
+            if (!said++) printf("ui_render: the splash shows PELUCCO among clouds\n");
         }
         return;
     }
@@ -2080,7 +2069,7 @@ int main(int argc, char **argv)
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
     char path[600];
     uint32_t p, s;
-    static const char *const SHOW[] = {"GREY", "MONO", "GREEN", "PAPER", "NIGHT"};   /* (NIGHT: #50, to review) */
+    static const char *const SHOW[] = {"GREY", "MONO", "GREEN", "PAPER", "NIGHT", "DUSK", "MIST", "SAKURA"};   /* (NIGHT: #50, to review) */
     snprintf(path, sizeof path, "%s/report.txt", out);
     rep = fopen(path, "w");
     if (!rep) { fprintf(stderr, "cannot write %s\n", path); return 1; }

@@ -1218,40 +1218,45 @@ static void draw_columns(void)
 }
 
 
-/* The power-on splash (main.c fm1_main, web/emu felucca_web.c; 1.1.5): a RAISE square centred on the screen, square
- * corners (in every style; LINE too: RAISE from the palette's SURF), in it in AF_M, the ink SPL_PAD in from the left:
- * at the top the name and the version, the first line's capitals' top SPL_PAD down; at the bottom the maker and
- * "with community", the last line's capitals' bottom (its baseline) SPL_PAD up from the square's bottom. Both
- * margins are measured to the capitals (the descender of "community" hangs into the bottom one, as off a baseline).
- * The square (176 x 176) is more than the canvas (CV_MAX, 240 x 124): it is filled straight on the screen and its
- * two text bands drawn on it as canvases, the top one from the square's top edge, the bottom one to its bottom edge.
- * In the saved palette (settings_init before it) */
-#define SPL_SQ 176                                  /* the square (even: centred exactly) */
-#define SPL_X0 ((240u - SPL_SQ) / 2u)               /* its top-left on the screen (x and y) */
-#define SPL_PAD 16                                  /* the text's inset: left (its ink), top and bottom (the capitals) */
-#define SPL_PITCH 20                                /* line to line */
-static const char *const SPLASH_LINES[] = {"Felucca", FELUCCA_VERSION, "H\xFCgelton Instruments", "with community"};
-/* a band of two lines, h tall, at y on the screen: the first line's top at ly; the two lines' capitals declared
- * against al0..al1 (mode: AL_V the band centred there, AL_B the last baseline on al1) */
-static void splash_band(uint32_t y, uint32_t h, int32_t ly, const char *const *l, uint32_t mode, int32_t al0,
-                        int32_t al1, const char *tag)
+/* The power-on splash (main.c fm1_main, web/emu felucca_web.c; Pelucco's own): the name PELUCCO in the middle of the
+ * screen among stylised clouds, flat shapes in two tones (RAISE for the near ones, LINE for the far), above and
+ * below it, none behind the text; under it, small, "by Gadlele". Drawn in three bands of the
+ * canvas, 80 rows each (the clouds are drawn in every band they reach, clipped to it). In the saved palette
+ * (settings_init before it) */
+#define SPL_BAND 80
+#define SPL_NAME_Y 100                              /* the name's line (AF_L, 35 px) */
+static const char SPLASH_NAME[] = "PELUCCO", SPLASH_SUB[] = "by Gadlele";
+/* a cloud: a flat base (two end discs and the strip between) with two bumps. u is its unit (the base's half height);
+ * cx, cy the middle of the base's line, in screen coordinates; oy the band's top */
+static void splash_cloud(int32_t cx, int32_t cy, int32_t u, int32_t oy, uint16_t c)
 {
-    cv_begin(SPL_SQ, h, T_RAISE);
-    GFX_HOOK_ALIGN(0, al0, 0, al1, mode | AL_N(2), tag);
-    cv_text_on(SPL_PAD, ly, &AF_M, l[0], T_TEXT, T_RAISE);
-    cv_text_on(SPL_PAD, ly + SPL_PITCH, &AF_M, l[1], T_TEXT, T_RAISE);
-    cv_blit(SPL_X0, y);
+    cy -= oy;
+    cv_rect(cx - 3 * u, cy - u, 6 * u, 2 * u, c);
+    cv_disc(cx - 3 * u, cy, u, c);
+    cv_disc(cx + 3 * u, cy, u, c);
+    cv_disc(cx - u * 7 / 5, cy - u * 3 / 4, u * 3 / 2, c);
+    cv_disc(cx + u * 5 / 4, cy - u, u * 15 / 8, c);
+}
+static void splash_band(uint32_t y)
+{
+    int32_t oy = (int32_t)y;
+    cv_begin(240, SPL_BAND, T_BG);
+    splash_cloud(186, 36, 5, oy, T_LINE);               /* the far ones first */
+    splash_cloud(132, 70, 4, oy, T_LINE);
+    splash_cloud(52, 208, 6, oy, T_LINE);
+    splash_cloud(64, 60, 9, oy, T_RAISE);               /* the near ones */
+    splash_cloud(174, 190, 10, oy, T_RAISE);
+    if (SPL_NAME_Y >= oy && SPL_NAME_Y < oy + SPL_BAND) {   /* the name, and the line under it */
+        cv_text(HALF_UP(240 - text_w(&AF_L, SPLASH_NAME)), SPL_NAME_Y - oy, &AF_L, SPLASH_NAME, T_TEXT);
+        cv_text(HALF_UP(240 - text_w(&AF_S, SPLASH_SUB)), SPL_NAME_Y + 44 - oy, &AF_S, SPLASH_SUB, T_MID);
+    }
+    cv_blit(0, y);
 }
 static void draw_splash(void)
 {
-    int32_t h = SPL_PAD - AF_M_CAP_Y + SPL_PITCH + AF_M.h;     /* a band: its two lines, the descenders in */
-    int32_t lb = h - SPL_PAD - AF_M_CAP_H - AF_M_CAP_Y;         /* the bottom band's last line: its top */
-    lcd_fill(0, 0, 240, 240, T_BG);
-    lcd_fill(SPL_X0, SPL_X0, SPL_SQ, SPL_SQ, T_RAISE);
-    splash_band(SPL_X0, (uint32_t)h, SPL_PAD - AF_M_CAP_Y, SPLASH_LINES, AL_V, SPL_PAD,
-                SPL_PAD + SPL_PITCH + AF_M_CAP_H, "splash name + version SPL_PAD from the top");
-    splash_band(SPL_X0 + SPL_SQ - (uint32_t)h, (uint32_t)h, lb - SPL_PITCH, SPLASH_LINES + 2, AL_B, 0, h - SPL_PAD,
-                "splash maker's baseline SPL_PAD from the bottom");
+    splash_band(0);
+    splash_band(SPL_BAND);
+    splash_band(2u * SPL_BAND);
     lcd_sync();
 }
 
