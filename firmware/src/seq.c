@@ -104,6 +104,7 @@ static inline uint32_t gen_on(const track_t *t)
  * SCALE). The garden is then the track's scale (scale_mask: the bells, MIDI IN, SCALE LEDS all follow it); empty (every
  * key turned off) it is the scale again. Bit n: the pitch class n (0 = C). Not saved: gone at power-off */
 static uint16_t garden[NTRK];
+static uint8_t garden_scale[NTRK];                 /* the SCALE it was made from: another SCALE starts the garden again from it */
 static uint32_t scale_bits(const track_t *t)
 {
     return SCALE_MASK[clamp(t->p[P_SCALE], 0, sizeof SCALE_MASK / sizeof SCALE_MASK[0] - 1)];
@@ -113,6 +114,10 @@ static uint32_t scale_mask(const track_t *t)
     uint32_t ti = (uint32_t)(t - trk), g = ti < NTRK ? garden[ti] : 0u, r, m = 0, root = (uint32_t)((t->p[P_ROOT] % 12 + 12) % 12);
     if (!g || !gen_on(t))
         return scale_bits(t);
+    if (garden_scale[ti] != (uint8_t)t->p[P_SCALE]) {   /* a new SCALE (HOME's KNOB 3 on ECHOES): the garden is that scale again */
+        garden[ti] = 0;
+        return scale_bits(t);
+    }
     for (r = 0; r < 12u; r++)                      /* (relative to ROOT, as the scales are) */
         m |= ((g >> ((r + root) % 12u)) & 1u) << r;
     return m;
@@ -123,8 +128,10 @@ static void garden_toggle(const track_t *t, uint32_t k)
     uint32_t ti = (uint32_t)(t - trk), pc = (uint32_t)(((53 + (int32_t)k + t->p[P_TRANS]) % 12 + 12) % 12), r, root = (uint32_t)((t->p[P_ROOT] % 12 + 12) % 12);
     if (ti >= NTRK)
         return;
-    if (!garden[ti]) {                             /* the first key: the scale as the garden to start from */
+    if (!garden[ti] || garden_scale[ti] != (uint8_t)t->p[P_SCALE]) {   /* the first key: the scale as the garden to start from */
         uint32_t m = scale_bits(t);
+        garden[ti] = 0;
+        garden_scale[ti] = (uint8_t)t->p[P_SCALE];
         for (r = 0; r < 12u; r++)
             garden[ti] |= (uint16_t)(((m >> r) & 1u) << ((r + root) % 12u));
     }

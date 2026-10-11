@@ -390,7 +390,7 @@ sevenths, or a fixed shape) and VOIC the voicing.
 **Parts** (Pelucco): the four tracks are named for what they play, **PAD, LEAD, ECHOES, NOISE**: HOME's footer shows the
 selected track's part, and the tracks' rows lead with it ("PAD / SOFT PAD"). HOME's four knobs follow the part: the **PAD**
 (track 1) has its sound's first knob, **ATK** (the swell in), **REL** (the tail out) and **REV** (the space); **ECHOES**
-(track 3, the BELL engine) has **DENS** and **EVOLVE** of the generator, then the **DLY** and **REV** sends; LEAD and NOISE keep
+(track 3, the BELL engine) has **DENS** and **EVOLVE** of the generator, then the **SCL** (the scale the bells are drawn from, on the track's ROOT, which is set on the SCL page: MAJ, MIN, DOR, PHRY, PEN ..; another scale starts the garden again from it) and the **REV** send (the delay is on its FX page); LEAD and NOISE keep
 their engine's own four. At power-on: the PAD is FM6 PAD (CHRD OFF: OMNI is one turn of SCL > CHORD away), the LEAD ANALOG SAW LEAD, ECHOES the bells,
 NOISE the AMBI sea on the DRONE pattern (press PLAY and it sounds, for as long as it plays).
 

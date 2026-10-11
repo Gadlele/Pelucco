@@ -113,6 +113,14 @@ int main(void)
         }
         CHK(seen != 0);
         (void)kc; (void)ke;
+        /* another SCALE (ECHOES HOME's KNOB 3): the garden is that scale again, and a key edits it from there */
+        t->p[P_SCALE] = 2;
+        CHK(scale_mask(t) == SCALE_MASK[2] && garden[2] == 0);
+        kb_prev = 0; fm1_in.notes = 0; song.sel = 2;
+        key_down(0); key_up(0);
+        CHK(garden[2] == (uint16_t)(SCALE_MASK[2] ^ (1u << 5)) || garden[2] == (uint16_t)(SCALE_MASK[2] | (1u << 5)));
+        t->p[P_SCALE] = 1;
+        garden[2] = 0;
         /* DENS 0: the keys play again, the garden is left alone */
         t->p[P_E4] = 0;
         {

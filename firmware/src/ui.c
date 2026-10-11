@@ -472,7 +472,8 @@ static int lock_page_ok(uint32_t i)
 }
 /* Pelucco: the parameter on HOME's KNOB k of track t, by the part it plays (ROLE_NAME). PAD (track 1, a pitched engine):
  * the engine's first knob, then ATK and REL (the swell in, the tail out) and the reverb send (the space). ECHOES (track 3
- * on BELL): DENS and EVOLVE of its generator, then the delay and reverb sends. LEAD and NOISE (and any other sound
+ * on BELL): DENS and EVOLVE of its generator, then the SCALE its bells are drawn from (on the ROOT; the delay is on its
+ * FX page) and the reverb send. LEAD and NOISE (and any other sound
  * on a part): the engine's own four. */
 static uint32_t home_id(const track_t *t, uint32_t k)
 {
@@ -482,7 +483,7 @@ static uint32_t home_id(const track_t *t, uint32_t k)
     if (ti == 0u && !chord_kit(t))
         return k == 0u ? e->knob[0] : k == 1u ? (uint32_t)P_ATK : k == 2u ? (uint32_t)P_REL : (uint32_t)P_REV;
     if (ti == 2u && FELUCCA_BELL && t->eng_req == ENGI_BELL)
-        return k == 0u ? (uint32_t)P_E4 : k == 1u ? (uint32_t)P_E5 : k == 2u ? (uint32_t)P_DLY : (uint32_t)P_REV;
+        return k == 0u ? (uint32_t)P_E4 : k == 1u ? (uint32_t)P_E5 : k == 2u ? (uint32_t)P_SCALE : (uint32_t)P_REV;
     return e->knob[k];
 }
 static uint32_t lock_id(uint32_t k)

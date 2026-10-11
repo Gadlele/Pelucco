@@ -5740,7 +5740,7 @@ static uint64_t scr_session_fork(uint32_t setting, uint32_t *flags)   /* from th
     return r[0];
 }
 /* Pelucco: the four tracks are parts, PAD LEAD ECHOES NOISE; HOME's four knobs follow the part (ui.c home_id): the PAD's
- * are its engine's first, ATK, REL, REV; ECHOES (on BELL) DENS, EVOLVE, DLY, REV; LEAD and NOISE the engine's own */
+ * are its engine's first, ATK, REL, REV; ECHOES (on BELL) DENS, EVOLVE, SCL, REV; LEAD and NOISE the engine's own */
 static uint32_t eng_count_for(uint32_t ti)          /* how many engines part ti offers */
 {
     uint32_t n = 0, r;
@@ -5818,8 +5818,8 @@ static int test_roles(void)
          home_id(&trk[0], 2) == P_REL && home_id(&trk[0], 3) == P_REV;
     bad += check("  PAD: the engine's first knob, ATK, REL, REV", ok);
     ok = FELUCCA_BELL && trk[2].eng_req == ENGI_BELL && home_id(&trk[2], 0) == P_E4 && home_id(&trk[2], 1) == P_E5 &&
-         home_id(&trk[2], 2) == P_DLY && home_id(&trk[2], 3) == P_REV;
-    bad += check("  ECHOES on BELL: DENS, EVOLVE, DLY, REV", ok);
+         home_id(&trk[2], 2) == P_SCALE && home_id(&trk[2], 3) == P_REV;
+    bad += check("  ECHOES on BELL: DENS, EVOLVE, SCL, REV", ok);
     for (k = 0; k < 4u; k++)
         ok &= home_id(&trk[1], k) == ENGINES[trk[1].eng_req]->knob[k] && home_id(&trk[3], k) == ENGINES[trk[3].eng_req]->knob[k];
     bad += check("  LEAD and NOISE: the engine's own four", ok);
