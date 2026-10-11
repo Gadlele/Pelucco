@@ -12,9 +12,10 @@ if ! command -v emcc >/dev/null 2>&1; then
     [ -d "$HOME/emsdk" ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
     "$HOME/emsdk/emsdk" install latest
     "$HOME/emsdk/emsdk" activate latest
-    # shellcheck disable=SC1091
-    . "$HOME/emsdk/emsdk_env.sh"
+    # (emsdk_env.sh wants bash; construct_env prints the same settings for any shell)
+    eval "$("$HOME/emsdk/emsdk" construct_env 2>/dev/null)"
 fi
+command -v emcc >/dev/null 2>&1 || { echo "emu_setup: Emscripten installed but emcc is not on the PATH; try: bash -c '. ~/emsdk/emsdk_env.sh && sh web/emu/build.sh'"; exit 1; }
 echo "== 3/4 tables"
 mkdir -p build/gen
 python3 tools/gen_aa_font.py build/gen/ui_fonts.h --preset inter-tight
