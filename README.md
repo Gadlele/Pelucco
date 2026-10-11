@@ -336,7 +336,7 @@ In the order the device lists them:
 - **PHYS**: physical models: modal resonators, strings, struck membranes, sympathetic strings
 - **NOISE**: noise from analog to digital: colours, crackle, shift-register and metallic tones
 - **BELL** (Pelucco, engine 13, where SLICE was; `FELUCCA_SLICE=1` builds SLICE instead): a soft two-operator FM bell
-  (RATIO, TONE, ENV, DTN). With DENS above 0 it plays itself: four loops of 13, 17, 23 and 29 steps that drift against
+  (RATIO, TONE, ENV, DTN). Every bell starts with DENS 0, so a key plays the preset; turn DENS up (Echoes: KNOB 1) and it plays itself: four loops of 13, 17, 23 and 29 steps that drift against
   each other, snapped to the track's ROOT and SCALE (EVOLVE, RANGE, SEED)
 - **SLICE**: a drum break, a piano note (both built in) or your own sample cut into slices, one per key;
   set the slices by hand on the SLICES page
