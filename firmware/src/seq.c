@@ -810,6 +810,7 @@ static void keyboard_block(void)
 }
 
 /* -------------------------------------------------------- sequencer --- */
+static void gen_restart(uint32_t k);              /* (BELL's generator, below) */
 static void seq_start(void)
 {
     uint32_t i;
@@ -818,6 +819,7 @@ static void seq_start(void)
     for (i = 0; i < NTRK; i++) {                   /* every track from its step 0, together */
         track_t *t = &trk[i];
         t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+        gen_restart(i);                            /* BELL's loops start again, from their SEED */
         t->seq_pos = 0x7FFFFFFF;                   /* step 0 fires on the first block */
         t->rskip_n = 0;
         t->rh_n = 0;
@@ -1013,6 +1015,81 @@ static const motion_store_t *chain_motion(const track_t *t)
     return !chain.running ? &motion : s < 4u ? &chain.source[s].motion : 0;
 }
 
+/* BELL's generator (Pelucco; eng_bell.c): a track on BELL with DENS above 0 plays four loops of unequal length
+ * instead of its steps. Every step the loops advance one slot together; a slot is a note (0..47 above C3) and a
+ * threshold u: it sounds while u < DENS squared / 100 (the low end of DENS is sparse, the top full), so DENS thins or thickens the loops live, and EVOLVE draws a new slot or two
+ * each time a loop comes round. Its own generator (SEED), so one SEED is always the same bells; the notes snap to the
+ * track's ROOT / SCALE as they play */
+#define GEN_NLOOP 4
+#define GEN_MAXLEN 29
+static const uint8_t GEN_LEN[GEN_NLOOP] = {13, 17, 23, 29};
+typedef struct { uint8_t u, note, vel; } gen_slot_t;
+typedef struct { uint32_t rng, c; uint8_t seed, ok; gen_slot_t s[GEN_NLOOP][GEN_MAXLEN]; } gen_t;
+static gen_t gen[NTRK];
+static uint32_t gen_rnd(gen_t *g)
+{
+    g->rng = g->rng * 1664525u + 1013904223u;
+    return g->rng >> 8;
+}
+static void gen_slot(gen_t *g, gen_slot_t *s)
+{
+    s->u = (uint8_t)(gen_rnd(g) % 100u);
+    s->note = (uint8_t)(gen_rnd(g) % 48u);
+    s->vel = (uint8_t)(55u + gen_rnd(g) % 55u);
+}
+static void gen_reset(gen_t *g, uint32_t seed)
+{
+    uint32_t j, i;
+    g->rng = seed * 2654435761u + 12345u;
+    for (j = 0; j < GEN_NLOOP; j++)
+        for (i = 0; i < GEN_LEN[j]; i++)
+            gen_slot(g, &g->s[j][i]);
+    g->seed = (uint8_t)seed;
+    g->ok = 1;
+    g->c = 0;
+}
+static void gen_restart(uint32_t k) { gen[k].ok = 0; }
+static inline uint32_t gen_on(const track_t *t)
+{
+    return FELUCCA_BELL && eng_idx(t->eng_req) == ENGI_BELL && t->p[P_E4] > 0;
+}
+static __attribute__((noinline)) void gen_step(track_t *t, uint32_t idx, uint32_t period)
+{
+    gen_t *g = &gen[trk_index(t)];
+    uint32_t seed = (uint32_t)t->p[P_E7] & 127u, dens = ((uint32_t)t->p[P_E4] * (uint32_t)t->p[P_E4] + 99u) / 100u, ev = (uint32_t)t->p[P_E5];
+    uint32_t span = 12u * ((uint32_t)clamp(t->p[P_E6], 0, 3) + 1u), c, j, k, m = 0, vel = 0;
+    step_t st;
+    memset(&st, 0, sizeof st);
+    if (!g->ok || g->seed != seed)
+        gen_reset(g, seed);
+    c = g->c++;
+    for (j = 0; j < GEN_NLOOP; j++) {
+        uint32_t pos = c % GEN_LEN[j];
+        const gen_slot_t *s;
+        if (!pos && c)                              /* a loop comes round: it changes a little */
+            for (k = 0; k < 1u + ev / 25u; k++)
+                if (gen_rnd(g) % 100u < ev)
+                    gen_slot(g, &g->s[j][gen_rnd(g) % GEN_LEN[j]]);
+        s = &g->s[j][pos];
+        if (s->u < dens) {
+            uint32_t n = (uint32_t)clamp(scale_snap(t, 48 + (int32_t)(s->note % span) + t->p[P_TRANS]), 0, 127), i;
+            for (i = 0; i < m && st.note[i] != n; i++)
+                ;
+            if (i == m) {
+                st.note[m++] = (uint8_t)n;
+                if (s->vel > vel)
+                    vel = s->vel;
+            }
+        }
+    }
+    if (!m)
+        return;                                     /* nothing falls on this step: what rings goes on ringing */
+    st.n = (uint8_t)m;
+    st.time = ST_NOTE;
+    st.vel = (uint8_t)vel;
+    seq_step(t, &st, idx, period, SEQ_ROLLED);
+}
+
 /* step idx plays: its chance (the one roll, as seq_step made it: a step that does not play applies no lock), the
  * automation and the locks before the notes (so a note-on reads them: eng_drum's KIT, ..), the notes live recording
  * already sounds left out (rskip), then its notes. On its start, or (NUDGE) at its start + its nudge */
@@ -1021,6 +1098,12 @@ static __attribute__((noinline)) void seq_play(track_t *t, uint32_t idx, uint32_
     const step_t *s = &seq_steps(t)[idx];
     const motion_store_t *m = chain_motion(t);
     uint32_t skip = SEQ_ROLLED, i, k;
+    if (gen_on(t)) {                                /* BELL's generator: the loops, not the steps */
+        if (m)
+            motion_step(t, idx, m, 1u);
+        gen_step(t, idx, period);
+        return;
+    }
     if (step_chance(s) < 100u && rng() % 100u >= step_chance(s))
         skip = SEQ_MISS;
     if (m)
