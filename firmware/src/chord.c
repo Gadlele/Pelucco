@@ -166,7 +166,7 @@ static uint32_t chord_build(track_t *t, uint32_t root, uint8_t *out)
     return m;
 }
 
-#define OMNI_TRACKS 3u
+#define OMNI_TRACKS 2u
 static const struct { int8_t off; uint8_t shape; } OMNI_BTN[11] = {
     {5, CH_MAJ}, {0, CH_MAJ}, {7, CH_MAJ}, {2, CH_MIN}, {9, CH_MIN}, {4, CH_MIN},
     {7, CH_DOM7}, {4, CH_DOM7}, {2, CH_DOM7}, {10, CH_MAJ}, {9, CH_DOM7},
@@ -179,7 +179,7 @@ static uint32_t omni_shaped(uint32_t shape, uint32_t mod)
     uint32_t se = shape == CH_DOM7 || shape == CH_MIN7 || (mod & 2u);
     return mi ? (se ? CH_MIN7 : CH_MIN) : (se ? CH_DOM7 : CH_MAJ);
 }
-/* 1 = key presses of this track are an Omnichord (OMNI on tracks 1..3, not on a kit) */
+/* 1 = key presses of this track are an Omnichord (OMNI on tracks 1 and 2, not on a kit) */
 static int omni_on(const track_t *t) { return (t->p[P_CHRD] == CH_OMNI || t->p[P_CHRD] == CH_OMNIH) && trk_index(t) < OMNI_TRACKS && !chord_kit(t); }
 
 /* key k of an OMNI track -> the notes it plays in out (CHORD_MAX): a black key's chord (it becomes the track's current

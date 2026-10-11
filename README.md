@@ -403,7 +403,7 @@ the keys do not play, each one turns its note on or off for the bells to be draw
 track's ROOT / SCALE and turns that note off; the lit keys are the garden (always, whatever MENU > SCALE LEDS says). With every
 note off the scale is the garden again. MIDI IN follows it too. With DENS 0 the keys play as ever. The garden is not saved.
 
-**OMNI** (Pelucco, after [FoMni](https://github.com/charlesvestal/fm1-fomni)), the last CHRD value, on tracks 1 to 3: the
+**OMNI** (Pelucco, after [FoMni](https://github.com/charlesvestal/fm1-fomni)), the last CHRD value, on the Pad and the Lead (every engine but a drum kit): the
 keys become an Omnichord. The 11 black keys are chord buttons (F C G Dm Am Em G7 E7 D7 Bb A7 in C, following the
 track's ROOT), each sounding its chord, in the VOIC voicing, while held. The 16 white keys are the strum plate: one
 note of the current chord each, root, third, fifth and again an octave up. OFF is the classic keyboard; MIDI IN

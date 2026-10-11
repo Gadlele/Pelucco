@@ -428,6 +428,41 @@ static int omni(void)
         bad += check("  ENV alone still opens its page", !ui.home && cur_page()->fam == FAM_ENV);
         go_home();
     }
+    /* the first two parts (Pad, Lead) play OMNI on every engine but the kit (DRUM) */
+    {
+        uint32_t e, ti, bad_e = 0;
+        for (ti = 0; ti < 2u; ti++)
+            for (e = 0; e < NENGINES; e++) {
+                track_t *tt = &trk[ti];
+                if (!eng_ok(e)) continue;
+                reset();
+                song.sel = (uint8_t)ti;
+                set_engine_of(tt, e);
+                events_block(CTL);
+                tt->p[P_CHRD] = CH_OMNI; tt->p[P_VOICE] = V_POLY; tt->p[P_VOIC] = VC_CLOSE; tt->p[P_ROOT] = 0; tt->p[P_TRANS] = 0;
+                song.octave = 0;
+                key_down(C);
+                events_block(CTL);
+                if ((e == ENGI_DRUM ? ngated(tt) != 1u : ngated(tt) != 3u)) {
+                    printf("  part %u engine %u %s: %u voices\n", ti + 1u, e, ENGINES[e]->name, ngated(tt));
+                    bad_e++;
+                }
+                key_up(C);
+            }
+        song.sel = 0;
+        bad += check("OMNI: Pad and Lead play the chord on every engine (a kit plays the note)", !bad_e);
+    }
+    /* Echoes (track 3) and Noise ignore OMNI */
+    {
+        track_t *t3 = &trk[2];
+        reset();
+        song.sel = 2;
+        t3->p[P_CHRD] = CH_OMNI; t3->p[P_VOICE] = V_POLY;
+        key_down(C);
+        bad += check("OMNI on track 3: no chords, the key is a note", ngated(t3) == 1u);
+        key_up(C);
+        song.sel = 0;
+    }
     /* track 4 (the noise track) ignores OMNI */
     {
         track_t *t4 = &trk[3];
