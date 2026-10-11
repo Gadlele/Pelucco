@@ -1345,6 +1345,60 @@ static void select_engine(uint32_t e)
     ui.force = 1;
 }
 
+/* Pelucco: SEQ > AMBIENT, OCT+: the ambient machine. The Pad (part 1) and Echoes (part 3) are drawn anew: one ROOT and one
+ * soft SCALE for both, each an engine of its own kinds (eng_allowed; no kit) and a sound of it, the Pad's progression (DENS,
+ * BARS) and Echoes' bells (DENS, EVOLVE, RANGE, SEED) switched on, slow attacks and long releases on the Pad, some reverb
+ * and delay. The Lead, the Noise, the tempo and the global reverb are the player's: not touched. The transport starts when
+ * it is stopped */
+static void ambient_random(void)
+{
+    static const uint8_t SCL[8] = {1, 2, 3, 4, 5, 6, 8, 9};      /* N_SCALE: MAJ MIN DOR MIX PEN MPEN PHRY LYD */
+    uint32_t root = rng() % 12u, scale = SCL[rng() % 8u], n;
+    if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
+    for (n = 0; n < 2u; n++) {
+        uint32_t ti = n ? 2u : 0u, list[NENGINES], nl = 0, e, k, j;
+        track_t *t = &trk[ti];
+        for (e = 0; e < NENGINES; e++)
+            if (eng_ok(e) && eng_allowed(ti, e) && !ENGINES[e]->oneshot && !ENGINES[e]->keys && ENGINES[e]->npresets)
+                list[nl++] = e;
+        if (!nl)
+            continue;
+        e = list[rng() % nl];
+        set_engine_of(t, e);
+        k = rng() % preset_shown(e);
+        for (j = 0; preset_orig(ENGINES[e], j) != j || k--; j++)
+            ;
+        apply_preset_to(t, j);
+        t->p[P_ROOT] = (int16_t)root;
+        t->p[P_SCALE] = (int16_t)scale;
+        t->p[P_MUTE] = 0;
+        if (t->p[P_REV] < 50)
+            t->p[P_REV] = (int16_t)(50u + rng() % 30u);
+        if (ti == 0u) {                                        /* the Pad: chords, poly, swelling, long */
+            t->p[P_VOICE] = V_POLY;
+            t->p[P_PDEN] = (int16_t)(45u + rng() % 46u);
+            t->p[P_PLEN] = (int16_t)(2u + rng() % 3u);
+            if (t->p[P_ATK] < 70)
+                t->p[P_ATK] = (int16_t)(70u + rng() % 30u);
+            if (t->p[P_REL] < 85)
+                t->p[P_REL] = (int16_t)(85u + rng() % 25u);
+        } else if (FELUCCA_BELL && e == ENGI_BELL) {            /* Echoes: the bells play by themselves */
+            t->p[P_E4] = (int16_t)(30u + rng() % 41u);
+            t->p[P_E5] = (int16_t)(15u + rng() % 36u);
+            t->p[P_E6] = (int16_t)(1u + rng() % 2u);
+            t->p[P_E7] = (int16_t)(rng() % 128u);
+            if (t->p[P_DLY] < 30)
+                t->p[P_DLY] = (int16_t)(30u + rng() % 30u);
+        }
+        garden[ti] = 0;                                         /* Echoes' garden starts again from the scale */
+        gen_restart(ti);
+    }
+    if (!song.playing && !seq_counting())
+        transport_req = 1;                                      /* (as the PLAY button starts it) */
+    ui_message("AMBIENT MACHINE");
+    ui.force = 1;
+}
+
 /* the presets of every engine (in ENGINE_ORDER), then the used user presets, as one list (the PRESETS knob and the
  * PRESETS page browse it) */
 static uint32_t preset_all_pos(uint32_t *total)          /* list index of the selected track's preset */
@@ -1613,6 +1667,8 @@ static uint32_t act_cols(void)                   /* the columns that are actions
         return 1u;                               /* PLAY / STOP (also the PLAY button) */
     if (pg->graph == GR_PATS)
         return 2u;                               /* LOAD */
+    if (pg->graph == GR_AMBI)
+        return 1u;                               /* RANDOM */
     if (pg->graph == GR_USER)
         return 14u;                              /* LOAD ERASE SAVE */
     if (pg->graph == GR_SLICES)
@@ -1629,6 +1685,7 @@ static uint32_t act_col(void)
 {
     if (!ui.home && cur_page()->graph == GR_SONG) return 1u;
     if (!ui.home && cur_page()->graph == GR_EVENTS) return 5u;
+    if (!ui.home && cur_page()->graph == GR_AMBI) return 1u;
     return !ui.home && cur_page()->graph == GR_PATS ? 2u : ui.act;
 }
 
@@ -1645,6 +1702,8 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
         return song.playing || chain_busy() ? "STOP" : "PLAY";
     if (cur_page()->graph == GR_PATS)
         return "LOAD";
+    if (cur_page()->graph == GR_AMBI)
+        return "RANDOM";
     if (cur_page()->graph == GR_USER)
         return UP_GO[(c + 2u) % 3u];
     if (cur_page()->graph == GR_SLICES)
@@ -1667,6 +1726,8 @@ static int act_ready(void)
         return song.playing || chain_busy() || chain_config.count;
     if (cur_page()->graph == GR_PATS)
         return pat_last[s] != pat_pick() + 1u || steps_sig(TSEL) != pat_sig[s];
+    if (cur_page()->graph == GR_AMBI)
+        return !chain_busy();
     if (cur_page()->graph == GR_USER)
         return c == 3u ? !song.playing : up_used(ui.uslot) && (c == 1u || !song.playing);
 #if FELUCCA_SLICE

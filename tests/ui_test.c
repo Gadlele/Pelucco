@@ -2611,7 +2611,7 @@ static int test_presets_knob(void)
                 sel_ok &= same_snd && same_steps && ui.page == i;
             } else if (g == GR_EVENTS) {               /* (AUTOMATION: its row, PLAY's to the first record's) */
                 sel_ok &= same_snd && same_steps && ui.page == i && ui.ev_row == 1u;
-            } else if (g == GR_TOOLS) {
+            } else if (g == GR_TOOLS || g == GR_AMBI) {
                 tools_ok &= same_snd && same_steps && !ui.confirm;
             } else {
                 snd_ok &= !same_snd && same_steps && ui.page == i && !ui.home;
@@ -2677,7 +2677,7 @@ static int test_page_cycles(void)
     ok = 1;
     for (i = 0; i < NPAGES; i++) {                       /* every page in a family its button reaches, and its LED */
         uint32_t f = PAGES[i].fam;
-        ok &= f != FAM_SEQ || PAGES[i].graph == GR_ROLL || PAGES[i].graph == GR_EVENTS;
+        ok &= f != FAM_SEQ || PAGES[i].graph == GR_ROLL || PAGES[i].graph == GR_EVENTS || PAGES[i].graph == GR_AMBI;
         ok &= f != FAM_GLO || PAGES[i].graph == GR_SONG;   /* (1.2: GLO's only page) */
         ok &= f != FAM_TRK || PAGES[i].graph == GR_TRK || str_eq(PAGES[i].title, "CLOCK");   /* HOME's: MIXER CLOCK */
         ok &= PAGES[i].graph != GR_TRK || f == FAM_TRK;
@@ -3860,6 +3860,46 @@ static int test_slices(void)
 static uint32_t black(uint32_t b) { return key_at(1, b); }
 static void lay_combo(uint32_t btn, uint32_t k) { btn_down(btn); key_down(k); frame(); }
 static void oct_back(void) { btn_down(B_OCTDN); frame(); btn_up(B_OCTDN); frame(); }
+
+/* Pelucco: SEQ > AMBIENT, OCT+ (ui.c ambient_random): the Pad and Echoes drawn anew on one ROOT and SCALE */
+static int test_ambient(void)
+{
+    int bad = 0, ok = 1, i, same = 1, root_ok = 1, eng_ok_ = 1, gen_ok = 1, seen_root = 0, seen_eng = 0;
+    uint32_t scales = 0, engs = 0;
+    track_t lead, noise;
+    int16_t bpm;
+    ui_power_on();
+    set_engine_of(&trk[1], 0);
+    memcpy(&lead, &trk[1], sizeof lead);
+    memcpy(&noise, &trk[3], sizeof noise);
+    bpm = song.g[G_BPM];
+    go_page(GR_AMBI); frame();
+    ok &= str_eq(cur_page()->title, "AMBIENT") && act_cols() == 1u && str_eq(act_name(0), "RANDOM");
+    bad += check("ambient machine: the AMBIENT page (SEQ), one action: RANDOM", ok);
+    for (i = 0; i < 60; i++) {
+        track_t *pad = &trk[0], *ech = &trk[2];
+        press(B_OCTUP); frames(48);
+        root_ok &= pad->p[P_ROOT] == ech->p[P_ROOT] && pad->p[P_SCALE] == ech->p[P_SCALE];
+        scales |= 1u << pad->p[P_SCALE];
+        seen_root |= 1 << pad->p[P_ROOT];
+        engs |= 1u << pad->eng_req;
+        eng_ok_ &= eng_allowed(0, pad->eng_req) && pad->eng_req != ENGI_DRUM && (!FELUCCA_BELL || ech->eng_req == ENGI_BELL);
+        gen_ok &= pad->p[P_PDEN] > 0 && pad->p[P_PLEN] >= 1 && pad->p[P_PLEN] <= 8 && pad->p[P_VOICE] == V_POLY &&
+                  pad->p[P_REV] >= 50 && ech->p[P_REV] >= 50 && !pad->p[P_MUTE] && !ech->p[P_MUTE];
+        if (FELUCCA_BELL) gen_ok &= ech->p[P_E4] > 0 && ech->p[P_E5] > 0 && ech->p[P_E6] >= 1 && ech->p[P_E6] <= 2;
+        same &= !memcmp(&lead, &trk[1], sizeof lead) && !memcmp(&noise, &trk[3], sizeof noise) && song.g[G_BPM] == bpm;
+    }
+    (void)seen_eng;
+    bad += check("ambient machine: the Pad and Echoes share the ROOT and SCALE", root_ok);
+    bad += check("  .. over 60 draws every ROOT of a dozen shows up, several scales, several Pad engines (never a kit)",
+                 __builtin_popcount((unsigned)seen_root) >= 9 && __builtin_popcount(scales) >= 5 && __builtin_popcount(engs) >= 4 && eng_ok_);
+    bad += check("  the Pad's DENS / BARS and Echoes' DENS / EVOLVE / RANGE above zero, poly, with reverb", gen_ok);
+    bad += check("  the Lead, the Noise and the BPM are left alone", same);
+    song.playing = 0; transport_req = 0;
+    press(B_OCTUP); frames(48);
+    bad += check("  a stopped transport is asked to start (as PLAY does); the page is left as it was", transport_req == 1u && cur_page()->graph == GR_AMBI);
+    return bad;
+}
 
 static uint32_t eng_count_for(uint32_t ti);
 static int test_quick_layers(void)
@@ -6745,11 +6785,13 @@ static int test_seq_tools(void)
     press(B_SEQ); frames(320);
     ok &= cur_page()->graph == GR_EVENTS && str_eq(cur_page()->title, "AUTOMATION");
     press(B_SEQ); frames(320);
+    ok &= cur_page()->graph == GR_AMBI && str_eq(cur_page()->title, "AMBIENT");   /* (Pelucco's) */
+    press(B_SEQ); frames(320);
     ok &= str_eq(cur_page()->title, "STEP");
     press(B_SEQ); frames(320);
     press(B_SEQ); frames(320);
     ok &= cur_page()->graph == GR_EVENTS;
-    bad += check("1.2: a tap on STEP: DETAIL (1.5.1), AUTOMATION, then STEP again (three SEQ pages; the hint until the layer "
+    bad += check("1.2: a tap on STEP: DETAIL (1.5.1), AUTOMATION, then STEP again (four SEQ pages with Pelucco's AMBIENT; the hint until the layer "
                  "was opened)", ok);
     go_title("ENV"); frame();
     press(B_SEQ); frames(320);
@@ -7098,6 +7140,8 @@ static int test_layer_lock(void)
     ok &= str_eq(cur_page()->title, "DETAIL") && !ui.lock && !ui.layer;   /* (1.5.1) */
     press(B_SEQ); frames(400);
     ok &= str_eq(cur_page()->title, "AUTOMATION") && !ui.lock && !ui.layer;
+    press(B_SEQ); frames(400);
+    ok &= str_eq(cur_page()->title, "AMBIENT") && !ui.lock && !ui.layer;
     press(B_SEQ);
     btn_down(B_SEQ); frames(500);
     ok &= ui.layer == LAYER_SEQ && !ui.lock;
@@ -9793,6 +9837,7 @@ int main(void)
     bad += test_momentary();
     bad += test_roles();
     bad += test_part_sounds();
+    bad += test_ambient();
     bad += test_fm6_charts();
     bad += test_fm6_ops();
     bad += test_home_tracks();

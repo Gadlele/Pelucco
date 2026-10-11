@@ -2319,6 +2319,10 @@ static void draw_graph(void)
             cv_oy = 0;
             panel_note("TURN TO PICK", "[OCT+] CONFIRM", 0);
             break;
+        case GR_AMBI:
+            cv_oy = 0;
+            panel_note("AMBIENT MACHINE", "[OCT+] RANDOMIZE", "PAD + ECHOES");
+            break;
 #if FELUCCA_SLICE
         case GR_SLICES:
             cv_oy = 0;

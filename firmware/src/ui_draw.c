@@ -692,7 +692,7 @@ static void foot_hint(char *a, char *b)
     uint32_t c = act_col();
     str_cpy(a, "OCT+ ", 8);
     str_cpy(a + 5, c ? act_name(c - 1u) : "--", 8);
-    str_cpy(b, ui.act && cur_page()->graph != GR_PATS ? "OCT- CANCEL" : "OCT- BACK", 16);
+    str_cpy(b, ui.act && cur_page()->graph != GR_PATS && cur_page()->graph != GR_AMBI ? "OCT- CANCEL" : "OCT- BACK", 16);
 }
 
 /* SAVE > USER / PROJECT: EDIT renames the selected slot (ui_name.c); SEQ > AUTOMATION: EDIT deletes the row's
@@ -1018,6 +1018,18 @@ static void draw_columns(void)
         draw_column(1, "ENG", ENGINES[TSEL->eng_req]->name, "", VAL(1u), -1, engine_icon(ENGINES[TSEL->eng_req]->name));
         draw_column(2, "FAV", preset_favorite() ? "ON" : "OFF", "", VAL(2u), -1, ICON_X_STAR);
         draw_column(3, "LIST", list_name(list_mode()), "", VAL(3u), -1, ICON_X_FOLDER);
+        return;
+    }
+    if (cur_page()->graph == GR_AMBI) {                  /* RANDOM (a GO button), then the Pad's ROOT and SCL as they are now */
+        const track_t *t = &trk[0];
+        const char *u2;
+        char v2[12];
+        draw_act_column(0, "RANDOM", T_THEME, ICON_AUTO);
+        param_format(&TP[P_ROOT], t->p[P_ROOT], val, &unit);
+        draw_column(1, "ROOT", val, unit, T_DIM, -1, ICON_AUTO);
+        param_format(&TP[P_SCALE], t->p[P_SCALE], v2, &u2);
+        draw_column(2, "SCL", v2, u2, T_DIM, -1, ICON_AUTO);
+        draw_column(3, "", "", "", T_THEME, -1, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_PATS) {                  /* PAT, then LOAD (a GO button) */
