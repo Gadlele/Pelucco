@@ -154,20 +154,22 @@ static uint32_t eng_step(uint32_t e, int32_t dir)
     return eng_vis((eng_rank(e % NENGINES) + (dir > 0 ? 1u : NENG_SHOWN - 1u)) % NENG_SHOWN);
 }
 
-/* Pelucco: the parts keep their kind of sound. Echoes (part 3) offers BELL only, Noise (part 4) the noise engines only
- * (NOISE, and AMBI where it is engine 3); Pad and Lead offer every other engine (no bells, no noise). Browsing (PRESETS,
- * the ENG knob, the EDIT layer) follows it; a project, a user preset or MIDI may still put another sound there.
- * eng_limited(ti): the part ti has a limit (all four do) */
+/* Pelucco: the parts keep their kind of sound. Echoes (part 3) offers BELL only, Noise (part 4) AMBI only (it holds the
+ * noises; the older NOISE engine is no longer offered, its index stays for projects); Pad and Lead offer every other
+ * engine. Browsing (PRESETS, the ENG knob, the EDIT layer) follows it; a project, a user preset or MIDI may still put
+ * another sound there. eng_limited(ti): the part ti has a limit (all four do) */
 #define ENGI_NOISE 11u
 static int eng_limited(uint32_t ti) { return ti < 4u; }
 static int eng_allowed(uint32_t ti, uint32_t e)
 {
-    int bell = FELUCCA_BELL && e == ENGI_BELL, noise = e == ENGI_NOISE || (FELUCCA_AMBI && e == ENGI_AMBI);
+    int bell = FELUCCA_BELL && e == ENGI_BELL, ambi = FELUCCA_AMBI && e == ENGI_AMBI;
+    if (e == ENGI_NOISE && FELUCCA_AMBI)
+        return 0;                                 /* (the old NOISE engine is no longer offered: AMBI holds the noises) */
     if (FELUCCA_BELL && ti == 2u)
         return bell;
     if (ti == 3u)
-        return noise;
-    return !bell && !noise;
+        return FELUCCA_AMBI ? ambi : e == ENGI_NOISE;
+    return !bell && !ambi && e != ENGI_NOISE;
 }
 /* the next / previous engine ti may use (itself when there is no other) */
 static uint32_t eng_step_for(uint32_t ti, uint32_t e, int32_t dir)

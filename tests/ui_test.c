@@ -5787,25 +5787,21 @@ static int test_part_sounds(void)
         bad += check("part sounds: Echoes stays on BELL (PRESETS and the ENG knob)", ok && TSEL->eng_req == ENGI_BELL);
     }
     song.sel = 3;
-    set_engine_of(TSEL, ENGI_NOISE);
+    set_engine_of(TSEL, ENGI_AMBI);
     preset_pos(&total);
-    memset(seen, 0, sizeof seen);
     for (i = 0; i < total; i++) {
         e = preset_at(i, &k);
-        ok &= e < NENGINES && (e == ENGI_NOISE || (FELUCCA_AMBI && e == ENGI_AMBI));
-        if (e < NENGINES) seen[e]++;
+        ok &= e == ENGI_AMBI;
     }
-    bad += check("part sounds: Noise lists the NOISE and AMBI sounds only",
-                 ok && seen[ENGI_NOISE] == preset_shown(ENGI_NOISE) && (!FELUCCA_AMBI || seen[ENGI_AMBI] == preset_shown(ENGI_AMBI)) &&
-                 total == seen[ENGI_NOISE] + seen[ENGI_AMBI]);
+    bad += check("part sounds: Noise lists the AMBI sounds only (no NOISE engine)", ok && total == preset_shown(ENGI_AMBI));
     ok = 1;
     for (i = 0; i < total + 3u; i++) {
         preset_step(1);
-        ok &= TSEL->eng_req == ENGI_NOISE || (FELUCCA_AMBI && TSEL->eng_req == ENGI_AMBI);
+        ok &= TSEL->eng_req == ENGI_AMBI;
     }
-    ok &= eng_step_for(3, ENGI_NOISE, 1) == (FELUCCA_AMBI ? ENGI_AMBI : ENGI_NOISE) &&
-          eng_step_for(3, ENGI_AMBI, 1) == ENGI_NOISE;
-    bad += check("part sounds: Noise PRESETS and the ENG knob stay on the noise engines", ok);
+    ok &= eng_step_for(3, ENGI_AMBI, 1) == ENGI_AMBI && eng_step_for(3, ENGI_AMBI, -1) == ENGI_AMBI &&
+          eng_count_for(3) == 1u && !eng_allowed(0, ENGI_NOISE) && !eng_allowed(3, ENGI_NOISE);
+    bad += check("part sounds: Noise PRESETS and the ENG knob stay on AMBI", ok);
     song.sel = 0;
     return bad;
 }
@@ -9577,8 +9573,8 @@ static int test_edit_quick_actions(void)
 
     /* the white keys as before (an engine pick from DRUM: the sound load clears the mutes) */
     btn_down(B_EDIT); frames(500);
-    key_down(white(eng_rank(ENGI_NOISE))); frame(); key_up(white(eng_rank(ENGI_NOISE))); frame();   /* (T4 takes noise engines only) */
-    ok = TSEL->eng_req == ENGI_NOISE && !drum_mute[3] && eqa_count(TSEL) == 0u;
+    key_down(white(eng_rank(ENGI_AMBI))); frame(); key_up(white(eng_rank(ENGI_AMBI))); frame();   /* (T4 takes noise engines only) */
+    ok = TSEL->eng_req == ENGI_AMBI && !drum_mute[3] && eqa_count(TSEL) == 0u;
     a = leds_at(0); b2 = leds_at(250);
     for (i = 0; i < 11u; i++)                         /* (ANALOG: no actions, the black keys dark and inert) */
         ok &= !(((a | b2) >> black(i)) & 1u);
