@@ -204,7 +204,7 @@ static const struct {
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty): Pelucco's four parts, PAD, LEAD, ECHOES,
  * NOISE (ROLE_NAME) */
 static const uint8_t TRK_DEF[NPART][3] = {{ENGI_FM6, 4, 0}, {0, 0, 0}, {FELUCCA_BELL ? ENGI_BELL : 3, 0, 0}, {3, 0, 14}};
-                                                                      /* PAD FM6 PAD (an Omnichord: main.c), LEAD ANALOG SAW LEAD,
+                                                                      /* PAD FM6 PAD, LEAD ANALOG SAW LEAD,
                                                                        * ECHOES BELL (LOFI PULSE LD with FELUCCA_SLICE=1), NOISE AMBI
                                                                        * SEA on the DRONE pattern (LOFI with FELUCCA_LOFI=1) */
 /* the part each track plays, as the screen names it (HOME's footer, the tracks' rows) */

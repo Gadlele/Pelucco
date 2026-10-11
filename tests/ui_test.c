@@ -5779,6 +5779,38 @@ static int test_roles(void)
         ok = t->step[0].n == 1u && t->step[0].note[0] == 48 && t->step[1].time == ST_TIE;
         bad += check("  the NOISE track's DRONE: a C3 held through the pattern", ok);
     }
+    {   /* the colour follows the track (gfx.c ux_turn, ui_draw.c track_tint_apply): THEME turns, the rest stays */
+        uint16_t th[4], bg;
+        uint32_t pi, tk, d;
+        for (pi = 0; pi < NPALETTES; pi++) {
+            ui_power_on();
+            settings.palette = pi;
+            ux.trk = 0;
+            palette_set(pi);
+            ui.home = 1;
+            for (tk = 0; tk < 4u; tk++) {
+                song.sel = (uint8_t)tk;
+                ui.force = 1;
+                frame();
+                th[tk] = ux.theme;
+            }
+            bg = ux.bg;
+            ok = ux.trk == 3u && th[0] == UI_PALETTES[pi].theme && ux.bg == UI_PALETTES[pi].bg && ux.text == UI_PALETTES[pi].text &&
+                 ux.accent == UI_PALETTES[pi].accent;
+            if (pi == UI_GREY_INDEX || pi == UI_BW_INDEX)
+                ok &= th[1] == th[0] && th[2] == th[0] && th[3] == th[0];       /* no hue to turn */
+            else
+                ok &= th[1] != th[0] && th[2] != th[0] && th[3] != th[0] && th[1] != th[2] && th[2] != th[3] && th[1] != th[3];
+            for (tk = 0; tk < 4u; tk++) {                    /* each still reads on the background (lightness kept, within reason) */
+                d = ux_luma(th[tk]) > ux_luma(bg) ? ux_luma(th[tk]) - ux_luma(bg) : ux_luma(bg) - ux_luma(th[tk]);
+                ok &= d >= 45u;
+            }
+            if (!ok)
+                printf("  palette %u: %04x %04x %04x %04x on %04x\n", pi, th[0], th[1], th[2], th[3], bg);
+            bad += check("  the colour follows the track (each palette: THEME turns, BG TEXT ACCENT stay, still readable)", ok);
+        }
+        song.sel = 0; ux.trk = 0; settings.palette = UI_DEFAULT_INDEX; palette_set(UI_DEFAULT_INDEX);
+    }
     ui_power_on();
     ui.home = 1;
     song.sel = 2;

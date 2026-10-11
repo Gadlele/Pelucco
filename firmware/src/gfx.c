@@ -84,6 +84,7 @@ static struct {
     uint16_t bg, surf, text, theme, accent;
     uint16_t mid, dim, line, sel, tint, ink, rec, raise, key, lane, grid;
     uint8_t light, mono;
+    uint8_t trk;                 /* Pelucco: the selected track 0..3 (ui_draw.c track_tint_apply): THEME turns with it */
     uint8_t style;               /* MENU > STYLE (ui.c style_apply): ST_FLAT, ST_LINE */
     uint32_t gen;                /* bumped by palette_set (the text ramps follow) */
 } ux;
@@ -132,6 +133,26 @@ static uint32_t ux_luma(uint16_t c)        /* 0..255 */
     return ((c >> 11) * 255u / 31u * 54u + ((c >> 5) & 63u) * 255u / 63u * 183u + (c & 31u) * 255u / 31u * 19u) >> 8;
 }
 
+/* Pelucco: the THEME colour turns with the selected track (PAD, LEAD, ECHOES, NOISE): the palette's own for the first, the
+ * others its hue turned 150, 250 and 60 degrees (a rotation about the grey axis: lightness and saturation stay, so the
+ * contrast the palette was made with stays; GREY and MONO have no hue to turn). Q8 matrices, rows sum to 256 */
+static const int16_t UX_TURN[4][3][3] = {
+    {{256, 0, 0}, {0, 256, 0}, {0, 0, 256}},
+    {{-62, 85, 233}, {233, -62, 85}, {85, 233, -62}},
+    {{27, 253, -24}, {-24, 27, 253}, {253, -24, 27}},
+    {{171, -85, 171}, {171, 171, -85}, {-85, 171, 171}}
+};
+static uint16_t ux_turn(uint16_t c, uint32_t k)
+{
+    const int16_t(*m)[3] = UX_TURN[k & 3u];
+    int32_t v[3] = {(int32_t)(c >> 11) * 255 / 31, (int32_t)((c >> 5) & 63u) * 255 / 63, (int32_t)(c & 31u) * 255 / 31}, o[3], j;
+    for (j = 0; j < 3; j++) {
+        o[j] = (m[j][0] * v[0] + m[j][1] * v[1] + m[j][2] * v[2] + 128) >> 8;
+        o[j] = o[j] < 0 ? 0 : o[j] > 255 ? 255 : o[j];
+    }
+    return RGB(o[0], o[1], o[2]);
+}
+
 static void palette_set(uint32_t i)
 {
     const ui_pal_t *p = &UI_PALETTES[i % NPALETTES];
@@ -154,6 +175,12 @@ static void palette_set(uint32_t i)
         ux.mid = ux.sel = ux.key = ux.rec = p->text;   /* a selection, a keycap, REC: white, its INK black */
         ux.dim = ux.line = ux.raise = ux.lane = UI_BW_GREY;   /* the one grey: inactive, tracks, wells */
         ux.tint = ux.grid = p->bg;
+    }
+    if (ux.trk && !ux.mono && i != UI_BW_INDEX) {  /* Pelucco: the selected track's hue (THEME and what is blended from it) */
+        ux.theme = ux_turn(p->theme, ux.trk);
+        ux.sel = ux_mix(p->bg, ux.theme, UI_SEL_PCT);
+        ux.tint = ux_mix(p->bg, ux.theme, UI_TINT_PCT);
+        ux.lane = ux_mix(ux.surf, ux.theme, 10);
     }
     ux.gen++;                                    /* the text ramps change with the coverage curve */
 }

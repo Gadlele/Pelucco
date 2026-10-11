@@ -384,8 +384,12 @@ sevenths, or a fixed shape) and VOIC the voicing.
 selected track's part, and the tracks' rows lead with it ("PAD / SOFT PAD"). HOME's four knobs follow the part: the **PAD**
 (track 1) has its sound's first knob, **ATK** (the swell in), **REL** (the tail out) and **REV** (the space); **ECHOES**
 (track 3, the BELL engine) has **DENS** and **EVOLVE** of the generator, then the **DLY** and **REV** sends; LEAD and NOISE keep
-their engine's own four. At power-on: the PAD is FM6 PAD already set to OMNI, the LEAD ANALOG SAW LEAD, ECHOES the bells,
+their engine's own four. At power-on: the PAD is FM6 PAD (CHRD OFF: OMNI is one turn of SCL > CHORD away), the LEAD ANALOG SAW LEAD, ECHOES the bells,
 NOISE the AMBI sea on the DRONE pattern (press PLAY and it sounds, for as long as it plays).
+
+**A colour for each part** (Pelucco): the screen's theme colour follows the selected track: the palette's own for the PAD, its hue
+turned for the LEAD (warm), ECHOES (green) and NOISE (violet), whichever palette is chosen (the background, the text and the
+accent stay). GREY and MONO have no hue and stay as they are.
 
 **The garden** (Pelucco, after [AMB-1](https://github.com/charlesvestal/fm1-amb)): on **ECHOES** (the BELL engine with DENS above 0)
 the keys do not play, each one turns its note on or off for the bells to be drawn from. The first key starts from the

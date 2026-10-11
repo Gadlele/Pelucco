@@ -2144,6 +2144,28 @@ int main(int argc, char **argv)
             for (k = 0; k < sizeof SHOW / sizeof SHOW[0]; k++)
                 if (!strcmp(UI_PALETTES[p].name, SHOW[k])) write_ppm(out, SHOW[k], S_NAME[s]);
         }
+    {   /* Pelucco: the colour follows the track (gfx.c ux_turn): tracks 2..4 again, a handful of screens in every palette, linted;
+         * DUSK as OUTDIR/ppm/DUSK_T<n>_<screen>.ppm for a look */
+        static const int TS[] = {S_HOME, S_ENV, S_FX, S_MIXER, S_PRESETS, S_STEP};
+        uint32_t tk, i;
+        for (p = 0; p < NPALETTES; p++)
+            for (tk = 1; tk < NTRK; tk++)
+                for (i = 0; i < sizeof TS / sizeof TS[0]; i++) {
+                    char name[64], tag[24];
+                    snprintf(name, sizeof name, "%s/T%u/%s", UI_PALETTES[p].name, tk + 1u, S_NAME[TS[i]]);
+                    cur_name = name;
+                    setup(TS[i]);
+                    song.sel = (uint8_t)tk;
+                    pal(p);
+                    draw(TS[i]);
+                    lint();
+                    mono_check();
+                    if (!strcmp(UI_PALETTES[p].name, "DUSK")) {
+                        snprintf(tag, sizeof tag, "DUSK_T%u", tk + 1u);
+                        write_ppm(out, tag, S_NAME[TS[i]]);
+                    }
+                }
+    }
     {   /* STYLE LINE (gfx.c ST_*): every screen in every palette, linted (GREY: gray, MONO: neutral); GREY MONO NIGHT
          * PAPER as OUTDIR/ppm/<STYLE>_<PALETTE>_<screen>.ppm (ui_render.py: sheet_<STYLE>_<PALETTE>.png) */
         static const char *const ST_N[2] = {"FLAT", "LINE"}, *const ST_PAL[] = {"GREY", "MONO", "NIGHT", "PAPER"};

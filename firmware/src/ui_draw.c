@@ -1440,11 +1440,23 @@ static void style_apply(void)
     }
 }
 
+/* Pelucco: the colour follows the selected track (gfx.c ux_turn): turned when the track changes, all redrawn */
+static void track_tint_apply(void)
+{
+    uint8_t k = (uint8_t)(song.sel % NTRK);
+    if (ux.trk != k) {
+        ux.trk = k;
+        palette_set(settings.palette);
+        ui.force = 1;
+    }
+}
+
 static void ui_draw_page(uint32_t counting);
 static void ui_draw(void)
 {
     static uint8_t counting;
     style_apply();
+    track_tint_apply();
     ui.frame++;
     if (counting != (uint8_t)seq_counting()) {          /* a count-in began or ended: the page drawn again after it */
         counting = (uint8_t)seq_counting();
