@@ -318,7 +318,9 @@ In the order the device lists them:
   OP ENV (each stage's rate and level, drawn as the envelope) and OPERATOR 2 (mode, detune, velocity), one
   operator at a time on the algorithm chart; macros on top; SLOT picks a factory patch (F1–F8), the track's own (OWN) or a voice of the bank the web editor sent (B1–B32)
 - **PHASE**: phase distortion (ported from CrispyZebra)
-- **LOFI**: chiptune; pulse, triangle, saw, noise and a 4-bit wave RAM, stepped envelope, sweep, arpeggio
+- **AMBI** (Pelucco, engine 3, where LOFI was; `FELUCCA_LOFI=1` builds LOFI instead): an ambient noise generator, a
+  bed of white / pink / brown noise through a resonant filter with slow random swells (SWELL, RATE), and random pops
+  (CRKL, POP, BAL): sea, wind, rain, fire, vinyl, crickets
 - **SAMPLE**: multisampled instruments (PIANO, FLUTE, SAX) and 3 user sample slots
 - **VOICE**: formant oscillator, sung vowels
 - **TRIO**: 3 oscillators with ring modulation and sync, multimode filter
@@ -326,6 +328,9 @@ In the order the device lists them:
 - **GRAIN**: granular textures from the built-in samples or a user slot
 - **PHYS**: physical models: modal resonators, strings, struck membranes, sympathetic strings
 - **NOISE**: noise from analog to digital: colours, crackle, shift-register and metallic tones
+- **BELL** (Pelucco, engine 13, where SLICE was; `FELUCCA_SLICE=1` builds SLICE instead): a soft two-operator FM bell
+  (RATIO, TONE, ENV, DTN). With DENS above 0 it plays itself: four loops of 13, 17, 23 and 29 steps that drift against
+  each other, snapped to the track's ROOT and SCALE (EVOLVE, RANGE, SEED)
 - **SLICE**: a drum break, a piano note (both built in) or your own sample cut into slices, one per key;
   set the slices by hand on the SLICES page
 - **DRUM**: an 8-lane kit of Felucca's own drum voices on the General MIDI key map. KIT picks the
