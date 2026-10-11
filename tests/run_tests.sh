@@ -238,6 +238,8 @@ if [ -f build/gen/felucca_tables.h ]; then
     run "BELL generator: four loops 13/17/23/29, DENS, EVOLVE, SEED, scale and range" "$OUT/bell_gen_test"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -Itests -o "$OUT/prog_test" tests/prog_test.c -lm
     run "Pad progression: I IV V vi of the scale, held for BARS bars, DENS" "$OUT/prog_test"
+    $CC -O1 -w -Ibuild/gen -Ifirmware/src -Itests -o "$OUT/noise_inf_test" tests/noise_inf_test.c -lm
+    run "AMBI with REL at the top: the noise never lets go, a new note replaces it, REL down releases it" "$OUT/noise_inf_test"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -o "$OUT/ratchet_test" tests/ratchet_test.c -lm
     run "RATCH: x1..x4 in a step (notes, chords, drum hits), gates, chance, swing, projects, user presets, AUTOMATION RATCH rows" "$OUT/ratchet_test"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -o "$OUT/step15_test" tests/step15_test.c -lm

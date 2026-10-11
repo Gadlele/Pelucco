@@ -79,7 +79,12 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
 - **Quick layers:** hold FX, GLO, SCL, EDIT, REC or SEQ for shortcuts on the keys and knobs, or double-tap it to
   keep the layer open; one-step undo (SAVE held); REC on every page; OCT+ confirms, OCT- goes back; what can be
   pressed breathes softly instead of blinking
-- **Sounds per part** (Pelucco): browsing follows the part. **Echoes** offers the BELL sounds only, **Noise** the AMBI
+- **The Noise that never stops** (Pelucco): on the AMBI engine, **REL at its top (127) means infinite**: after the note off the
+noise goes on, with the transport stopped too, until REL is turned down (it then fades with that release). A new note replaces
+the sounding one. Nothing starts by itself: play a note (or start the transport on the DRONE pattern) once. All AMBI sounds have
+REL 64 (half), so they let go as before until you turn it up.
+
+**Sounds per part** (Pelucco): browsing follows the part. **Echoes** offers the BELL sounds only, **Noise** the AMBI
   engine only (the older NOISE engine is no longer offered; ARCADE and METAL went with it), **Pad** and **Lead** everything else. This holds for the PRESETS list and its ENG knob and
   for the EDIT layer; a project, a user preset or MIDI can still put another sound on a part.
 - **Warm ambient sounds** (Pelucco): soft, slow presets for the three tonal parts. Pad: ANALOG WARM PAD, TAPE STR, DUSK PAD,

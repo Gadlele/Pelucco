@@ -537,6 +537,9 @@ static __attribute__((noinline)) void esync_coef(const track_t *t)   /* (not inl
         esync_k[0] = ENV_LIN[p[P_ATK] & 127];
         esync_k[1] = ENV_EXP[p[P_DEC] & 127];
         esync_k[2] = ENV_EXP[p[P_REL] & 127];
+        if (FELUCCA_AMBI && t->engine == ENGI_AMBI && p[P_REL] >= 127)
+            esync_k[2] = 0;                             /* Pelucco: AMBI with REL at its top never lets go (the noise goes on after
+                                                         * the note off, stop included); turn REL down and it fades */
     }
 }
 
