@@ -39,6 +39,8 @@ static uint8_t eng_mem_owner[NPART];       /* engine index + 1 whose state is in
 #endif
 #if FELUCCA_SLICE
 #include "eng_slice.c"
+#else
+#include "eng_bell.c"           /* BELL: a two-operator FM bell (Pelucco), engine 13 in SLICE's place */
 #endif
 
 /* the editor protocol, user presets and projects store these indices: append, never reorder */
@@ -62,6 +64,8 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_FM6,                    /* 12 (ENGI_FM6) */
 #if FELUCCA_SLICE
     &ENG_SLICE,                  /* 13 (FELUCCA_SLICE=0 builds without it) */
+#else
+    &ENG_BELL,                   /* 13 (Pelucco: BELL, where SLICE was) */
 #endif
 };
 
@@ -119,9 +123,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #endif
     2, 3, 4, 5, 6, 7, 8, 9,      /* PHASE LOFI SAMPLE VOICE TRIO WHEEL GRAIN PHYS */
     11,                          /* NOISE */
-#if FELUCCA_SLICE
-    13,                          /* SLICE */
-#endif
+    13,                          /* SLICE, or BELL */
     10,                          /* DRUM */
 };
 
@@ -187,6 +189,7 @@ static const struct {
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])
 
 /* the parts at power-on (engine, preset, PATTERNS[n - 1] in the sequencer, 0 = empty: all are): bass, pad, lead, drums */
-static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}, {ENGI_DRUM, 0, 0}}; /* ANALOG ACID,
-                                                                       * FM6 PAD (was DIGITAL PAD), LOFI PULSE LD, DRUM KIT */
+static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {FELUCCA_BELL ? ENGI_BELL : 3, 0, 0}, {ENGI_DRUM, 0, 0}};
+                                                                      /* ANALOG ACID, FM6 PAD (was DIGITAL PAD), track 3 BELL
+                                                                       * (Pelucco: the bells' track; LOFI PULSE LD with FELUCCA_SLICE=1), DRUM KIT */
 static uint32_t trk_def_engine(uint32_t i) { return TRK_DEF[i % NPART][0]; }
