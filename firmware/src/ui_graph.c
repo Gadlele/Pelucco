@@ -1258,7 +1258,7 @@ static const char *eng_abbr(const char *name)
 #if FELUCCA_FM4
                                        {"DIGITAL", "DGTL"},
 #endif
-                                       {"PHASE", "PHAS"}, {"LOFI", "LOFI"},
+                                       {"PHASE", "PHAS"}, {"LOFI", "LOFI"}, {"AMBI", "AMBI"},
                                        {"SAMPLE", "SMPL"}, {"VOICE", "VOCL"}, {"TRIO", "TRIO"}, {"WHEEL", "WHEL"},
                                        {"GRAIN", "GRAN"}, {"PHYS", "PHYS"}, {"DRUM", "DRUM"},
                                        {"NOISE", "NOIS"}, {"FM6", "FM6"}, {"SLICE", "SLCE"}, {"BELL", "BELL"}};

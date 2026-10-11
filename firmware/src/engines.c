@@ -23,7 +23,9 @@ static uint8_t eng_mem_owner[NPART];       /* engine index + 1 whose state is in
 
 #include "eng_analog.c"
 #include "eng_phase.c"
+#if FELUCCA_LOFI
 #include "eng_lofi.c"
+#endif
 #include "eng_sample.c"
 #include "eng_formant.c"
 #include "eng_trio.c"
@@ -32,6 +34,9 @@ static uint8_t eng_mem_owner[NPART];       /* engine index + 1 whose state is in
 #include "eng_phys.c"           /* PHYS: DaisySP physical models (phys_dsp.c, MIT) */
 #include "eng_drum.c"           /* DRUM: the 8-lane kit (drum_voice.c) */
 #include "eng_noise.c"
+#if FELUCCA_AMBI
+#include "eng_ambi.c"          /* AMBI: an ambient noise generator (Pelucco), engine 3 in LOFI's place (uses eng_noise.c's isqrt32) */
+#endif
 #include "eng_fm6.c"            /* FM6: 6-operator FM, msfa ported (fm6_core.c, Apache-2.0) */
 #include "fm4_convert.c"        /* DIGITAL's tables, and its sounds -> FM6 */
 #if FELUCCA_FM4
@@ -52,7 +57,11 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_FM4_GONE,               /* 1: reserved (DIGITAL, retired: its sounds convert to FM6, fm4_convert.c) */
 #endif
     &ENG_PHASE,                  /* 2 */
+#if FELUCCA_LOFI
     &ENG_LOFI,                   /* 3 */
+#else
+    &ENG_AMBI,                   /* 3 (Pelucco: AMBI, where LOFI was) */
+#endif
     &ENG_SAMPLE,                 /* 4 */
     &ENG_FORMANT,                /* 5 VOICE (eng_formant.c: "voice" is a sounding note in voice.c) */
     &ENG_TRIO,                   /* 6 */
@@ -121,7 +130,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #if FELUCCA_FM4
     1,                           /* DIGITAL */
 #endif
-    2, 3, 4, 5, 6, 7, 8, 9,      /* PHASE LOFI SAMPLE VOICE TRIO WHEEL GRAIN PHYS */
+    2, 3, 4, 5, 6, 7, 8, 9,      /* PHASE LOFI (AMBI) SAMPLE VOICE TRIO WHEEL GRAIN PHYS */
     11,                          /* NOISE */
     13,                          /* SLICE, or BELL */
     10,                          /* DRUM */
@@ -184,6 +193,10 @@ static const struct {
      * now that the arpeggiator is the track's and a preset no longer switches it on */
     {"ARP", {48, 51, 55, 60, 63, 67, 72, 75, 48, 51, 55, 60, 63, 67, 72, 75},       /* 13 */
      {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
+    /* Pelucco: one note held through all 16 steps (a TIE on every step after the first); with a slow DIV the drone
+     * the DRONE sounds of ANALOG suggest, which swell for tens of seconds and ring on for as long */
+    {"DRONE", {48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                    /* 14 held */
+     {0, T_, T_, T_, T_, T_, T_, T_, T_, T_, T_, T_, T_, T_, T_, T_}},
 };
 #undef T_
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])

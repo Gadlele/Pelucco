@@ -16,6 +16,10 @@
 #ifndef FELUCCA_SLICE
 #define FELUCCA_SLICE 0          /* the SLICE engine (eng_slice.c), engine 13 (Pelucco: off by default; 1 builds it) */
 #endif
+#ifndef FELUCCA_LOFI
+#define FELUCCA_LOFI 0           /* the LOFI engine (eng_lofi.c), engine 3 (Pelucco: off by default, AMBI is in its place) */
+#endif
+#define FELUCCA_AMBI (!FELUCCA_LOFI)   /* the AMBI engine (eng_ambi.c): Pelucco's engine 3, an ambient noise generator */
 #define FELUCCA_BELL (!FELUCCA_SLICE)   /* the BELL engine (eng_bell.c): Pelucco's engine 13, in SLICE's place */
 #ifndef FELUCCA_FM4
 #define FELUCCA_FM4 0            /* the DIGITAL engine (eng_digital.c, four-operator FM): kept in the tree, not built
@@ -23,6 +27,7 @@
 #endif
 #define NENGINES 14              /* engine 13 comes last: SLICE or, in Pelucco's default build, BELL */
 #define ENGI_BELL 13u
+#define ENGI_AMBI 3u
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
 #define NENG_SHOWN (NENGINES - !FELUCCA_FM4)   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
                                                 * in the display order of engines.c ENGINE_ORDER */

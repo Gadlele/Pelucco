@@ -244,7 +244,12 @@ static uint32_t engine_icon(const char *name)
 #if FELUCCA_FM4
         {"DIGITAL", ICON_ALGORITHM},
 #endif
-        {"PHASE", ICON_PHASE}, {"LOFI", ICON_BITS},
+        {"PHASE", ICON_PHASE},
+#if FELUCCA_LOFI
+        {"LOFI", ICON_BITS},
+#else
+        {"AMBI", ICON_NOISE},
+#endif
         {"SAMPLE", ICON_SAMPLE}, {"VOICE", ICON_MOUTH}, {"TRIO", ICON_TRIO}, {"WHEEL", ICON_DRAWBAR},
         {"SLICE", ICON_SLICE},
         {"BELL", ICON_MOD},                   /* (two-operator FM: the modulator glyph, as FM6) */
