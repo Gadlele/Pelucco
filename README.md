@@ -76,8 +76,8 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
 - **ENV SYNC** (ENV > ENV DEST): the envelope's attack, decay and release as note values of the tempo
 - **Effects:** distortion, an **INSERT** (drives, CRUSH, phaser, flanger, chorus, with a dry / wet MIX) and the
   SLICER per track; chorus, delay (in time with the tempo, dotted values included) and reverb sends (the reverb as
-  **HALL**, ROOM or SPRING; HALL is a smooth stereo reverb, the default on a fresh start; **AMBI** (Pelucco) is
-  HALL with tails of 7 s at SIZE 0 up to about 90 s at 127, for pads and ambience); master limiter
+  **HALL**, ROOM or SPRING; HALL is a smooth stereo reverb; **AMBI** (Pelucco) is
+  HALL with tails of 7 s at SIZE 0 up to about 90 s at 127, for pads and ambience); Pelucco's default on a fresh start, with SIZE 100 and DAMP 0; master limiter
 - **FX layer:** hold FX for repeat, reverse, filter sweeps, tape stop, freeze, a harmonizer
   (OCT UP / OCT DN with shimmer), **FLANGER** and **PHASER** (in time with the tempo), **REV THROW** and **ECHO THROW**
   (every track's reverb or delay send full while held), and mutes on the black keys;
@@ -247,7 +247,7 @@ where marked here:
   and CPU load are MENU > SYSTEM > INFO. REC held is the REC layer as before.
 - **SONG has a lane per track**: older songs load with all four tracks on each row's slot and play as before; its
   knobs are KNOB 1 SECTION, 2 TRACK, 3 PAT, 4 REPS, and on SONG the white keys A3 B3 C4 D4 set the slot.
-- **A fresh start uses the HALL reverb** (up to 1.1.5: ROOM). Saved projects keep their reverb TYPE.
+- **A fresh start uses the AMBI reverb** (Pelucco; SIZE 100, DAMP 0; HALL up to 1.4, ROOM up to 1.1.5), and every Echoes sound loads with REV 100 % and DLY 50 %. Saved projects keep their reverb TYPE.
 - **BASS+ (MENU > SPEAKER EQ) is softer:** its added harmonics are at half the level, so a full-scale kick no longer
   distorts (#180).
 - **The web editor** needs its update for the new features; use the one on the site.

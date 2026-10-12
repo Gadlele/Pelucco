@@ -74,6 +74,7 @@ static void host_tracks_init(void)                /* as felucca_init: defaults, 
     for (i = 0; i < G_COUNT; i++)
         song.g[i] = GP[i].def;
     song.g[G_BPM] = 120;                          /* (the harness tests count in 120 BPM; the power-on default is 30) */
+    song.g[G_RSIZE] = 90; song.g[G_RDAMP] = 60;   /* (and hear the reverb they were made with: power-on is AMBI, SIZE 100, DAMP 0) */
     song.g[G_RTYPE] = 0;                          /* ROOM, the power-on reverb until 1.2: the renders (goldens) as
                                                    * before, ROOM bit for bit; HALL, the default since: reverb_test.c */
     for (k = 0; k < NTRK; k++) {

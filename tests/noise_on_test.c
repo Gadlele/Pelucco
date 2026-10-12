@@ -53,6 +53,7 @@ int main(void)
     ambient_random();                                     /* the machine on, then OCT- STOP: everything off */
     CHK(run(6) > 300.0 && trk[0].p[P_PDEN] > 0 && noise_inf(&trk[3]));
     ambient_stop();
+    song.g[G_RTYPE] = 2; song.g[G_RSIZE] = 0; song.g[G_RDAMP] = 127;   /* (the machine's AMBI tail is a minute: measure the voices with a short one) */
     CHK(trk[0].p[P_PDEN] == 0 && trk[2].p[P_E4] == 0 && !noise_inf(&trk[3]));
     run(30);
     CHK(!voices(&trk[3]));                                /* (the Noise stays off, the Pad and bells rang out) */
