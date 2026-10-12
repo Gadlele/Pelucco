@@ -1,0 +1,32 @@
+name: Emulator (web)
+# Builds the browser emulator (web/emu: the firmware compiled to WebAssembly) and puts the finished site on its own
+# branch, emu-<branch> (e.g. emu-fantasma), so it can be opened from GitHub Pages (Settings > Pages > Deploy from a
+# branch > emu-fantasma) or hosted anywhere as static files.
+on:
+  workflow_dispatch:
+  push:
+    branches: [fantasma, claude/pelucco-all]
+    paths: ['web/emu/**', 'firmware/**', 'tools/**', '.github/workflows/emulator.yml']
+permissions:
+  contents: write
+jobs:
+  emu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Emulator (WebAssembly)
+        run: sh tools/emu_setup.sh
+      - name: Publish build/emu on emu-<branch>
+        run: |
+          B="emu-$(echo "$GITHUB_REF_NAME" | sed 's#.*/##')"
+          cp -r build/emu /tmp/site
+          touch /tmp/site/.nojekyll
+          cd /tmp/site
+          git init -q -b "$B"
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Emulator build of $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "$B"
