@@ -1,0 +1,30 @@
+name: Firmware package (.fwsc)
+# Builds the installable package of the branch it runs on (JieLi toolchain and AC79 SDK are downloaded here).
+# Run it by hand: Actions > Firmware package > Run workflow; the .fwsc is in the run's Artifacts.
+# NOT TESTED ON AN FM-1: a beta. Keep M-VAVE's FM-1.fwsc at hand to go back.
+on:
+  workflow_dispatch:
+jobs:
+  fwsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Python packages
+        run: pip install Pillow fonttools
+      - name: JieLi toolchain
+        run: sh tools/get_toolchain.sh
+      - name: JieLi AC79 SDK (three files of it)
+        run: git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+      - name: Build
+        run: ./build.sh
+      - name: Package name
+        run: |
+          mkdir -p out
+          cp build/felucca.fwsc "out/${GITHUB_REF_NAME##*/}.fwsc"
+          sha256sum out/*.fwsc | tee out/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fwsc-${{ github.ref_name }}
+          path: out/
