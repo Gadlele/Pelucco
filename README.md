@@ -90,7 +90,7 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
   pressed breathes softly instead of blinking
 - **The ambient machine** (Pelucco): SEQ has a fourth page, **AMBIENT** (STEP, DETAIL, AUTOMATION, AMBIENT). **OCT+** draws the **Pad**,
 **Echoes** and the **Noise** anew: one random ROOT and one soft SCALE (MAJ, MIN, DOR, MIX, PEN, MPEN, PHRY, LYD) for all three, an engine
-and a sound at random for each among those they may use (never a kit), the Pad's progression (DENS, BARS, EVOLVE, SEED) and Echoes' bells
+and a sound at random for each among those they may use (never a kit), the Pad's progression (DENS, BARS, CHORDS, SEED) and Echoes' bells
 (DENS, EVOLVE, RANGE, SEED) switched on, a slow ATK and a long REL on the Pad, reverb on both and delay on Echoes. The Noise gets an AMBI
 sound with REL at its top and one note of the scale, which goes on for ever. The **Lead** gets the same ROOT and SCALE (only those: you can play
 along on it); its sound, the BPM and the global reverb are yours: not touched. **Nothing starts the transport**: the generators have their own clock (below). Press again for another machine; **OCT-** is
@@ -100,7 +100,7 @@ leaves the page).
 DIV at the project's BPM, from the moment DENS is above 0 and until it is back to 0 (what they hold then lets go). PLAY takes over as
 before: the generators start again with it. With an external clock and the transport stopped they run at the BPM of the project.
 - **The Pad's GEN page** (Pelucco): **EDIT > GEN** (after FILTER on ANALOG, before VOICE; not on a kit) holds the Pad's generator:
-**DENS**, **BARS**, **EVOLVE** (how many chords to choose among, 1 to 8: I IV V vi, then ii, iii, vii° and as eighth the bVII, each rarer than the last; default 4; BARS can be RND for a random 1 to 6 bars) and **SEED** (the same one is
+**DENS**, **BARS**, **CHORDS** (how many chords to choose among, 1 to 8: I IV V vi, then ii, iii, vii° and as eighth the bVII, each rarer than the last; default 4; BARS can be RND for a random 1 to 6 bars) and **SEED** (the same one is
 the same progression). CHORD (SCL) keeps CHRD and VOIC.
 
 **The Noise that never stops** (Pelucco): on the AMBI engine, **REL at its top (127) means infinite**, shown as **INF**: after the note off the
@@ -443,7 +443,7 @@ note of the current chord each, root, third, fifth and again an octave up. OFF i
 always plays single notes.
 
 **The Pad plays itself** (Pelucco): SCL > CHORD has two more knobs, **DENS** and **BARS**. With DENS above 0 the Pad stops reading
-its steps and plays chords by itself, the diatonic triads of its ROOT (**I, IV, V, vi** and, with EVOLVE higher, ii, iii, vii° and bVII) and SCALE (in the VOIC voicing; in a
+its steps and plays chords by itself, the diatonic triads of its ROOT (**I, IV, V, vi** and, with CHORDS higher, ii, iii, vii° and bVII) and SCALE (in the VOIC voicing; in a
 minor scale they are i, iv, v and VI), with I the most often and the same chord seldom twice. A chord is struck once and held for
 BARS bars of 16 steps (at the track's DIV), so a slow ATK swells and a long REL carries it into the next one. DENS is the chance
 that a bar group has its chord: 100 is a chord all the time, lower leaves silences where the reverb rings. DENS starts at 0, so
