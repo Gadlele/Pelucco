@@ -502,3 +502,10 @@ ported DSP keep their own licences ([LICENSES/](LICENSES/)); details in [LICENSI
 M-VAVE and FM-1 are trademarks of their respective owners. Felucca is not affiliated with or endorsed by them.
 
 Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+
+## Android app
+
+`android/` is a small Android app (a WebView around the browser emulator in `web/emu/`, so the firmware plays on a tablet, no FM-1 needed;
+Web MIDI is not available in a WebView). The APK is built by the **Android APK** GitHub Action (Actions tab > Android APK > Run workflow;
+download `pelucco-debug-apk` from the run), or locally with `sh tools/emu_setup.sh && sh android/build_apk.sh` (Android SDK, JDK 17, Gradle).
+Install the debug APK by hand (allow installs from your browser/files app). Not tested on a device yet.
