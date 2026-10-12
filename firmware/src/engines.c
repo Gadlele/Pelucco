@@ -169,7 +169,27 @@ static int eng_allowed(uint32_t ti, uint32_t e)
         return bell;
     if (ti == 3u)
         return FELUCCA_AMBI ? ambi : e == ENGI_NOISE;
+#ifndef PELUCCA_PAD_ALL                           /* (tests/ui_test.c browses every sound on the Pad: it builds with this) */
+    if (ti == 0u)                                 /* (Pelucco: the Pad keeps the engines that make pads) */
+        return e == 0u || e == 2u || e == 5u || e == 7u || e == ENGI_PHYS || e == 12u;     /* ANALOG PHASE VOICE WHEEL PHYS FM6 */
+#endif
     return !bell && !ambi && e != ENGI_NOISE;
+}
+/* the Pad's own list: of its engines' sounds only the pad-like ones (a bit per factory preset; every one is polyphonic) */
+static int pad_preset_ok(uint32_t e, uint32_t k)
+{
+    static const uint32_t KEEP[13] = {
+        /* 0 ANALOG: SOFT PAD PWM STR STRINGS AIR DRONE GLASS PAD SWELL HAZE MOON WARM PAD TAPE STR DUSK PAD SUN PAD HUSH */
+        0x7FF80Au, 0, 0x44u /* 2 PHASE: STRING, WARM STR */, 0, 0,
+        0x1F9u /* 5 VOICE: CHOIR AAH, WHISPER, SOFT CHOIR, BREATH, OOH CHOIR, MORPH CHOIR, ANGELS */, 0,
+        0xE9u /* 7 WHEEL: FULL ORGAN, SOFT FLUTE, AIR ORGAN, CHAPEL PAD, STRING ORGAN */, 0,
+        0x88u /* 9 PHYS: BOWED METAL, DRONE STRING */, 0, 0,
+        0x150u /* 12 FM6: PAD, ORGAN, SLOW STRINGS FM */};
+#ifdef PELUCCA_PAD_ALL
+    return 1;
+#else
+    return e < 13u && k < 32u && ((KEEP[e] >> k) & 1u);
+#endif
 }
 /* the next / previous engine ti may use (itself when there is no other) */
 static uint32_t eng_step_for(uint32_t ti, uint32_t e, int32_t dir)

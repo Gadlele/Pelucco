@@ -1306,8 +1306,11 @@ static void midi_pc_load(track_t *t, uint32_t n)
             t->p[P_E0] = (int16_t)k;
         return;
     }
-    if (n >= preset_shown(e)) {
-        int32_t s = (int32_t)(FM6_OWN + 1u + n - preset_shown(e));
+    uint32_t np = preset_shown(e);
+    if (e == ENGI_FM6 && np > FM6_NFACTORY)           /* (Pelucco: SLOW STRINGS FM is past F8: the numbers of the bank stay what they were) */
+        np = FM6_NFACTORY;
+    if (n >= np) {
+        int32_t s = (int32_t)(FM6_OWN + 1u + n - np);
         if (e == ENGI_FM6 && fm6_bank_slot(s) >= 0 && fm6_slot_ok(s))
             t->p[P_E7] = (int16_t)s;
         return;
@@ -1360,7 +1363,7 @@ static void ambient_random(void)
     uint32_t root = rng() % 12u, scale = SCL[rng() % 8u], n;
     if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
     for (n = 0; n < 3u; n++) {
-        uint32_t ti = n == 0u ? 0u : n == 1u ? 2u : 3u, list[NENGINES], nl = 0, e, k, j;
+        uint32_t ti = n == 0u ? 0u : n == 1u ? 2u : 3u, list[NENGINES], nl = 0, e, k, j, n2;
         track_t *t = &trk[ti];
         for (e = 0; e < NENGINES; e++)
             if (eng_ok(e) && eng_allowed(ti, e) && !ENGINES[e]->oneshot && !ENGINES[e]->keys && ENGINES[e]->npresets)
@@ -1369,9 +1372,16 @@ static void ambient_random(void)
             continue;
         e = list[rng() % nl];
         set_engine_of(t, e);
-        k = rng() % preset_shown(e);
-        for (j = 0; preset_orig(ENGINES[e], j) != j || k--; j++)
-            ;
+        for (n2 = 0; n2 < 64u; n2++) {                          /* (the Pad only plays its own list) */
+            k = rng() % preset_shown(e);
+            for (j = 0; preset_orig(ENGINES[e], j) != j || k--; j++)
+                ;
+            if (ti != 0u || pad_preset_ok(e, j))
+                break;
+        }
+        if (ti == 0u && !pad_preset_ok(e, j))
+            for (j = 0; j + 1u < ENGINES[e]->npresets && !pad_preset_ok(e, j); j++)
+                ;
         apply_preset_to(t, j);
         t->p[P_ROOT] = (int16_t)root;
         t->p[P_SCALE] = (int16_t)scale;
@@ -1478,6 +1488,8 @@ static int list_keep(uint32_t e, uint32_t k)
 {
     uint32_t m = list_mode();
     if (!eng_allowed(song.sel, e == NENGINES ? up_engine(k) : e))     /* (Pelucco: Echoes BELL, Noise noise) */
+        return 0;
+    if (song.sel == 0u && e != NENGINES && !pad_preset_ok(e, k))     /* (Pelucco: the Pad's own list) */
         return 0;
     return m == 1u ? favorite_has(e, k) : m ? sound_cat(e, k) == m - 1u : 1;
 }

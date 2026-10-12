@@ -30,15 +30,15 @@ static const char *const PRESET_CAT[16] = {
     "FFFFFFFFFFFF",              /* 3 AMBI: SEA, SURF, STORM, WIND, STREAM, HISS, FIRE, VINYL, RAIN, STORM RAIN, CAVE DRIP, CRICKETS */
 #endif
     "KKLL",                      /* 4 SAMPLE: PIANO, (PIANO: the retired TRANH's alias), FLUTE, SAX */
-    "PLBFPP",                  /* 5 VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
+    "PLBFPPPPP",                  /* 5 VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
     "BLLUP",                     /* 6 TRIO: FAT BASS, ARP LEAD, SYNC LEAD, RING BELL, CHIP CHOIR */
-    "KKKKKK",                  /* 7 WHEEL: the organs */
+    "KKKKKKKK",                  /* 7 WHEEL: the organs */
     "PFPPPP",                  /* 8 GRAIN: CLOUD PAD, GLITCH, FROZEN, SHIMMER */
     "UUUPUDDPU",                 /* 9 PHYS: BELL TREE, MARIMBA, PLUCK, BOWED METAL, KALIMBA, HAND DRUM, TOMS, DRONE
                                   * STRING, HARP */
     "D",                         /* 10 DRUM: DRUM KIT */
     "FFFFFFFFFFFF",              /* 11 NOISE: WIND, RAIN, ARCADE, METAL, SEA, SURF, FIRE, VINYL, STREAM, STORM, DRIPS, HISS */
-    "KUBLPUKU",                  /* 12 FM6: TINE EP, BELL, FM BASS, BRASS, PAD, MARIMBA, ORGAN, PLUCK */
+    "KUBLPUKUP",                  /* 12 FM6: TINE EP, BELL, FM BASS, BRASS, PAD, MARIMBA, ORGAN, PLUCK */
 #if FELUCCA_SLICE
     "DD",                        /* 13 SLICE: CHOP, STUTTER */
 #else

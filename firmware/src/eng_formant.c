@@ -210,6 +210,9 @@ static const preset_t FORMANT_PRESETS[] = {
     {"WHISPER", {0, 95, 88, 3, 50, 120, 50, 0}, {50, 90, 110, 90}, 0, 0, FX(0, 40, 30, 70), PAT(5)},    /* Pelucco: warm and soft, for ambient music (slow attacks, long tails, a lot of reverb) */
     {"SOFT CHOIR", {0, 0, 0, 0, 30, 28, 50, 0}, {112, 90, 118, 114}, 0, 0, FX(0, 70, 15, 92), PAT(5)},
     {"BREATH", {0, 95, 88, 3, 30, 110, 50, 0}, {110, 90, 115, 112}, 0, 0, FX(0, 50, 30, 85), PAT(5)},
+    {"OOH CHOIR", {45, 45, 0, -5, 25, 20, 45, 0}, {95, 90, 118, 100}, 0, 0, FX(0, 70, 15, 90), PAT(5)},
+    {"MORPH CHOIR", {0, 60, 110, 0, 35, 25, 55, 0}, {105, 90, 118, 108}, 0, 0, FX(0, 60, 20, 90), PAT(5)},
+    {"ANGELS", {0, 0, 0, 12, 25, 30, 55, 25}, {108, 90, 118, 112}, 0, 0, FX(0, 70, 20, 92), PAT(5)},
 };
 
 static const engine_t ENG_FORMANT = {

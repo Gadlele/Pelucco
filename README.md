@@ -101,11 +101,14 @@ as the new one rises, with no hole between. Nothing starts by itself at power-on
 ambient machine. All AMBI sounds have REL 64 (half), so they let go as before until you turn it up.
 
 **Sounds per part** (Pelucco): browsing follows the part. **Echoes** offers the BELL sounds only, **Noise** the AMBI
-  engine only (the older NOISE engine is no longer offered; ARCADE and METAL went with it), **Pad** and **Lead** everything else. This holds for the PRESETS list and its ENG knob and
+  engine only (the older NOISE engine is no longer offered; ARCADE and METAL went with it), **Lead** everything else, and the **Pad** only the engines that make pads: ANALOG, PHASE, VOICE,
+  WHEEL, PHYS and FM6 (no GRAIN, SAMPLE, TRIO or DRUM), of them 33 pad-like sounds, all polyphonic (the ambient machine picks
+  from those too). This holds for the PRESETS list and its ENG knob and
   for the EDIT layer; a project, a user preset or MIDI can still put another sound on a part.
 - **Warm ambient sounds** (Pelucco): soft, slow presets for the three tonal parts. Pad: ANALOG WARM PAD, TAPE STR, DUSK PAD,
   SUN PAD, HUSH (a drone), WHEEL AIR ORGAN, VOICE SOFT CHOIR and BREATH, GRAIN WARM CLOUD and SLOW FROST, PHASE WARM STR (attacks of
-  2-6 s, long releases). Lead: ANALOG SOFT LEAD, FLUTE, GLASS LEAD, MELLOW SAW. Echoes: the 15 BELL sounds (wooden: THUMB, TOY, HEARTH, AMBER, COPPER, SOFT TOLL; soft: SILK, COTTON, PETAL, HALO, DAWN,
+  2-6 s, long releases). Lead: ANALOG SOFT LEAD, FLUTE, GLASS LEAD, MELLOW SAW. Pad: new CHAPEL PAD and STRING ORGAN (WHEEL), OOH CHOIR, MORPH CHOIR and ANGELS (VOICE), SLOW STRINGS FM (FM6; MIDI
+  program numbers of FM6 stay as they were: F1..F8, then the bank). Echoes: the 15 BELL sounds (wooden: THUMB, TOY, HEARTH, AMBER, COPPER, SOFT TOLL; soft: SILK, COTTON, PETAL, HALO, DAWN,
   PRAYER, CLOISTER; bright but gentle: DEW, WIND CHIME). Add a little REV (the AMBI type for the longest tails).
 - **Presets:** factory presets, 32 user preset slots and 4 projects, named on the device (an FM6
   sound keeps its own patch in both); user presets get a category, and a project can get a random name; projects
