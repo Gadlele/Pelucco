@@ -130,6 +130,28 @@ int main(void)
         }
         garden[2] = 0;
     }
+    {   /* the own clock: the transport stopped, DENS above 0, the blocks go by: bells come; DENS 0 and they stop */
+        track_t *t;
+        uint32_t b, struck = 0, v0;
+        ui_power_on();
+        t = &trk[2];
+        t->engine = t->eng_req = ENGI_BELL;
+        t->p[P_E4] = 80; t->p[P_E5] = 20; t->p[P_E6] = 1; t->p[P_E7] = 3; t->p[P_SCALE] = 1;
+        song.g[G_CLOCK] = 0; song.g[G_BPM] = 120; song.playing = 0;
+        v0 = vage;
+        for (b = 0; b < 44100u * 5u / CTL; b++) {
+            uint32_t before = vage;
+            events_block(CTL);
+            if (vage != before) struck++;
+        }
+        CHK(!song.playing && vage != v0 && struck >= 8u);
+        t->p[P_E4] = 0;
+        events_block(CTL);
+        v0 = vage;
+        for (b = 0; b < 44100u * 2u / CTL; b++) events_block(CTL);
+        CHK(vage == v0);
+        printf("bell_gen: own clock, transport stopped: %u strikes in 5 s\n", struck);
+    }
     printf("bell_gen: hits at DENS 25: %u, 70: %u of %u steps; note-ons %u / %u\n", a, b, NSTEPS, n1, n2);
     (void)h1;
     if (bad) { printf("bell_gen: %d FAILED\n", bad); return 1; }

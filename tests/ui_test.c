@@ -3562,9 +3562,9 @@ static int engine_cycle(const char *const *want, uint32_t n)   /* EDIT tapped fr
 }
 static int test_edit_cycle(void)
 {
-    static const char *const CYC_A[] = {"EDIT 1", "EDIT 2", "FILTER", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};   /* (1.5: FILTER) */
+    static const char *const CYC_A[] = {"EDIT 1", "EDIT 2", "FILTER", "GEN", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};   /* (1.5: FILTER; Pelucco: the Pad's GEN) */
     static const char *const CYC_D[] = {"EDIT 1", "EDIT 2", "OP1 ENV", "OP2 ENV", "OP3 ENV", "OP4 ENV",
-                                        "OP LEVEL", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};
+                                        "OP LEVEL", "GEN", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};
     int bad = 0, ok;
     uint32_t i;
     ui_power_on();
@@ -3576,7 +3576,7 @@ static int test_edit_cycle(void)
         ok &= !str_eq(PAGES[i].title, "ENGINE");
     bad += check("no ENGINE page (engines are the EDIT layer's)", ok);
     set_engine_of(TSEL, 0);
-    bad += check("EDIT cycle (ANALOG): EDIT 1 EDIT 2 FILTER VOICE VOICE 2 VOICE 3 EDIT 1", engine_cycle(CYC_A, NELEM(CYC_A)));
+    bad += check("EDIT cycle (ANALOG): EDIT 1 EDIT 2 FILTER GEN VOICE VOICE 2 VOICE 3 EDIT 1", engine_cycle(CYC_A, NELEM(CYC_A)));
 #if FELUCCA_FM4
     set_engine_of(TSEL, 1);
     bad += check("EDIT cycle (DIGITAL): EDIT 1 EDIT 2 OP1..OP4 ENV OP LEVEL VOICE VOICE 2 VOICE 3 EDIT 1",
@@ -3584,7 +3584,7 @@ static int test_edit_cycle(void)
 #else
     set_engine_of(TSEL, ENGI_DIGITAL);
     {
-        static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "OPERATOR", "OP ENV", "OPERATOR 2", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};
+        static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "OPERATOR", "OP ENV", "OPERATOR 2", "GEN", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};
         bad += check("EDIT cycle (engine 1 asked for: FM6, DIGITAL retired): EDIT 1 EDIT 2 OPERATOR OP ENV OPERATOR 2 VOICE .. VOICE 3",
                      TSEL->eng_req == ENGI_FM6 && engine_cycle(CYC_F, NELEM(CYC_F)));
     }
@@ -3887,17 +3887,56 @@ static int test_ambient(void)
         gen_ok &= pad->p[P_PDEN] > 0 && pad->p[P_PLEN] >= 1 && pad->p[P_PLEN] <= 8 && pad->p[P_VOICE] == V_POLY &&
                   pad->p[P_REV] >= 50 && ech->p[P_REV] >= 50 && !pad->p[P_MUTE] && !ech->p[P_MUTE];
         if (FELUCCA_BELL) gen_ok &= ech->p[P_E4] > 0 && ech->p[P_E5] > 0 && ech->p[P_E6] >= 1 && ech->p[P_E6] <= 2;
-        same &= !memcmp(&lead, &trk[1], sizeof lead) && !memcmp(&noise, &trk[3], sizeof noise) && song.g[G_BPM] == bpm;
+        same &= !memcmp(&lead, &trk[1], sizeof lead) && song.g[G_BPM] == bpm;
     }
     (void)seen_eng;
     bad += check("ambient machine: the Pad and Echoes share the ROOT and SCALE", root_ok);
     bad += check("  .. over 60 draws every ROOT of a dozen shows up, several scales, several Pad engines (never a kit)",
                  __builtin_popcount((unsigned)seen_root) >= 9 && __builtin_popcount(scales) >= 5 && __builtin_popcount(engs) >= 4 && eng_ok_);
     bad += check("  the Pad's DENS / BARS and Echoes' DENS / EVOLVE / RANGE above zero, poly, with reverb", gen_ok);
-    bad += check("  the Lead, the Noise and the BPM are left alone", same);
+    bad += check("  the Lead and the BPM are left alone", same);
     song.playing = 0; transport_req = 0;
     press(B_OCTUP); frames(48);
-    bad += check("  a stopped transport is asked to start (as PLAY does); the page is left as it was", transport_req == 1u && cur_page()->graph == GR_AMBI);
+    bad += check("  the transport is not started (the generators have their own clock); the page is left as it was", transport_req == 0u && !song.playing && cur_page()->graph == GR_AMBI);
+    {   /* the Pad's EVOLVE / SEED, the Noise: an AMBI sound, REL at its top, one note of the scale going */
+        track_t *pad = &trk[0], *nz = &trk[3];
+        ok = 1;
+        for (i = 0; i < 40; i++) {
+            press(B_OCTUP); frames(48);
+            ok &= pad->p[P_PEV] >= 10 && pad->p[P_PEV] <= 40 && pad->p[P_PSEED] >= 0 && pad->p[P_PSEED] < 128 &&
+                  eng_idx(nz->eng_req) == ENGI_AMBI && nz->p[P_REL] == 127 && !nz->p[P_ESYNC] && !nz->p[P_MUTE] &&
+                  nz->p[P_ROOT] == pad->p[P_ROOT] && nz->p[P_SCALE] == pad->p[P_SCALE] && nz->seq_n == 1u;
+        }
+        bad += check("  the Pad's EVOLVE and SEED drawn; the Noise: AMBI, REL at its top, ROOT / SCALE of the others, one note going", ok);
+        ok = nz->seq_n == 1u;
+        for (i = 0; i < 6000; i++) events_block(64);          /* 8.7 s of audio blocks: seq_tick counts the gate down */
+        ok &= nz->seq_n == 0u;
+        bad += check("  the Noise's note lets go after its gate (the noise itself goes on: REL at its top)", ok);
+        press(B_OCTUP); frames(48);
+        press(B_OCTDN); frames(48);
+        {   /* the card: INF where AMBI's REL is at its top, the number below it */
+            char val[12];
+            const char *unit = "s";
+            song.sel = 3;
+            nz->p[P_ESYNC] = 0;
+            str_cpy(val, "10", 12);
+            nz->p[P_REL] = 127;
+            rel_inf(&nz->p[P_REL], val, &unit);
+            ok = str_eq(val, "INF") && !unit[0];
+            nz->p[P_REL] = 126;
+            str_cpy(val, "9.8", 12); unit = "s";
+            rel_inf(&nz->p[P_REL], val, &unit);
+            ok &= str_eq(val, "9.8") && str_eq(unit, "s");
+            song.sel = 0;
+            bad += check("  REL card: INF on the Noise at its top, the number below it", ok);
+        }
+        nz->p[P_REL] = 127;
+        press(B_OCTUP); frames(48);
+        press(B_OCTDN); frames(48);
+        ok = pad->p[P_PDEN] == 0 && trk[2].p[P_E4] == 0 && nz->p[P_REL] == 64 && nz->seq_n == 0u && cur_page()->graph == GR_AMBI &&
+             !song.playing && transport_req == 0u;
+        bad += check("  OCT-: STOP (the Pad's and Echoes' DENS 0, the Noise's REL 64 and its note let go; the page stays, the transport too)", ok);
+    }
     return bad;
 }
 

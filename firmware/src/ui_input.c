@@ -1618,6 +1618,8 @@ static void ui_input(void)
             page_tap(panel_btn_of(id));
     if (act_cols() && (oct & 2u)) {                     /* action pages: OCT+ does the picked action, */
         act_do();
+    } else if (act_cols() && (oct & 1u) && cur_page()->graph == GR_AMBI) {   /* AMBIENT: OCT- is STOP (HOME leaves) */
+        ambient_stop();
     } else if (act_cols() && (oct & 1u)) {              /* OCT- drops it, or (none picked) goes HOME */
         if (cur_page()->graph != GR_PATS && cur_page()->graph != GR_AMBI && ui.act)
             ui.act = 0;

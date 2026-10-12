@@ -2321,7 +2321,7 @@ static void draw_graph(void)
             break;
         case GR_AMBI:
             cv_oy = 0;
-            panel_note("AMBIENT MACHINE", "[OCT+] RANDOMIZE", "PAD + ECHOES");
+            panel_note("AMBIENT MACHINE", "[OCT+] RANDOMIZE", "[OCT-] STOP");
             break;
 #if FELUCCA_SLICE
         case GR_SLICES:

@@ -692,7 +692,7 @@ static void foot_hint(char *a, char *b)
     uint32_t c = act_col();
     str_cpy(a, "OCT+ ", 8);
     str_cpy(a + 5, c ? act_name(c - 1u) : "--", 8);
-    str_cpy(b, ui.act && cur_page()->graph != GR_PATS && cur_page()->graph != GR_AMBI ? "OCT- CANCEL" : "OCT- BACK", 16);
+    str_cpy(b, cur_page()->graph == GR_AMBI ? "OCT- STOP" : ui.act && cur_page()->graph != GR_PATS ? "OCT- CANCEL" : "OCT- BACK", 16);
 }
 
 /* SAVE > USER / PROJECT: EDIT renames the selected slot (ui_name.c); SEQ > AUTOMATION: EDIT deletes the row's
@@ -862,6 +862,15 @@ static void engine_columns(void)
     draw_column(2, "FAV", preset_favorite() ? "ON" : "OFF", "", VAL(2u), -1, ICON_X_STAR);
     draw_column(3, "", "", "", T_THEME, -1, ICON_NONE);
 }
+
+/* Pelucco: AMBI with REL at its top never lets go (voice.c): the card says INF where it said ~10 s */
+static void rel_inf(const int16_t *vp, char *val, const char **unit)
+{
+    if (FELUCCA_AMBI && vp == &TSEL->p[P_REL] && *vp >= 127 && !TSEL->p[P_ESYNC] && eng_idx(TSEL->eng_req) == ENGI_AMBI) {
+        str_cpy(val, "INF", 12);
+        *unit = "";
+    }
+}
 static void draw_columns(void)
 {
     uint32_t c;
@@ -873,6 +882,7 @@ static void draw_columns(void)
             int16_t *vp;
             const param_desc_t *d = home_param(c, &vp);
             param_format(d, *vp, val, &unit);
+            rel_inf(vp, val, &unit);
             card_mot_of(vp);
             if (home_levels())                         /* 1.5: T1..T4 LEVEL, the track's cushion, muted: DIM */
                 draw_column(c, "LEVEL", val, unit, trk[c].p[P_MUTE] ? T_DIM : VAL(c), RATIO(d, *vp), trk_icon(c, 1));
@@ -1219,6 +1229,7 @@ static void draw_columns(void)
             continue;
         }
         param_format(d, *vp, val, &unit);
+        rel_inf(vp, val, &unit);
         card_mot_of(vp);                                /* (a global: never) */
         if (vp == &TSEL->p[P_LRATE] && TSEL->p[P_LSYNC]) {   /* LFO 2 SYNC on: RATE does nothing, DIM (1.2) */
             draw_column(c, d->label, val, unit, T_DIM, RATIO(d, *vp), param_icon(d, *vp));

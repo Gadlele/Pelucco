@@ -911,6 +911,18 @@ static void seq_release(track_t *t)
     t->slide_glide = 0;                             /* live MONO / LEG keys must not glide after it */
 }
 
+/* Pelucco: the ambient machine's drone (ui.c ambient_random): a note on the track that its gate lets go after 8 s (the
+ * attack has long finished); with AMBI's REL at its top the noise then goes on for ever (voice.c) */
+static void ambient_drone(track_t *t, uint32_t note)
+{
+    seq_release(t);
+    trk_note_on(t, note, 100);
+    t->seq_notes[0] = (uint8_t)note;
+    t->seq_n = 1;
+    t->seq_hold = 0;
+    t->seq_off = 8u * (uint32_t)FS;
+}
+
 static void seq_stop(void)
 {
     uint32_t i;
@@ -1117,31 +1129,63 @@ static void gen_reset(gen_t *g, uint32_t seed)
  * track's DIV) a chord is chosen, and it sounds with chance DENS (the rest are silence, the tail rings on). The chord is
  * struck once and held across the bars (ties), so a slow ATK swells and REL carries it into the next */
 #define PROG_TRACKS 1u
-static uint16_t prog_c[NTRK];                      /* steps since the transport started */
+static uint16_t prog_c[NTRK];                      /* steps into the chord */
+static uint16_t prog_len[NTRK];                    /* .. of this many (0: a chord to choose) */
+static uint32_t prog_s[NTRK];                      /* the progression's own random state (SEED) */
+static uint8_t prog_sd[NTRK];
 static uint8_t prog_deg[NTRK] = {0}, prog_play[NTRK];
 static inline uint32_t prog_on(const track_t *t)
 {
     return t->p[P_PDEN] > 0 && trk_index(t) < PROG_TRACKS && !chord_kit(t);
 }
-static void gen_restart(uint32_t k) { gen[k].ok = 0; prog_c[k] = 0; prog_play[k] = 0; prog_deg[k] = 0xFFu; }
+static void gen_restart(uint32_t k) { gen[k].ok = 0; prog_c[k] = 0; prog_len[k] = 0; prog_s[k] = 0; prog_play[k] = 0; prog_deg[k] = 0xFFu; }
+static uint32_t prog_rand(uint32_t ti)               /* xorshift32: the same SEED is the same progression */
+{
+    uint32_t x = prog_s[ti];
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    prog_s[ti] = x;
+    return x >> 8;
+}
+/* The Pad's progression, chord by chord: I IV V vi (I most), and with EVOLVE above 0 now and then a ii or a iii, a chord
+ * that lasts a bar more or less than BARS. SEED: the same one is the same progression (it starts again with it) */
 static __attribute__((noinline)) void prog_step(track_t *t, uint32_t idx, uint32_t period)
 {
-    static const uint8_t DEG[4] = {0, 3, 4, 5};    /* I IV V vi: scale degrees, from 0 */
-    uint32_t ti = trk_index(t), len = 16u * (uint32_t)clamp(t->p[P_PLEN], 1, 8), c = prog_c[ti]++, pos = c % len;
+    static const uint8_t DEG[6] = {0, 3, 4, 5, 1, 2};    /* I IV V vi ii iii: scale degrees, from 0 */
+    uint32_t ti = trk_index(t), seed = (uint32_t)t->p[P_PSEED] & 127u, ev = (uint32_t)clamp(t->p[P_PEV], 0, 100), pos;
     step_t st;
+    if (!prog_s[ti] || prog_sd[ti] != seed) {
+        prog_sd[ti] = (uint8_t)seed;
+        prog_s[ti] = (seed + 1u) * 2654435761u | 1u;
+        prog_len[ti] = 0;
+        prog_deg[ti] = 0xFFu;
+    }
     memset(&st, 0, sizeof st);
     st.time = ST_TIE;
+    if (!prog_len[ti] || prog_c[ti] >= prog_len[ti])      /* the last chord is over: the next one */
+        prog_c[ti] = 0xFFFFu;
+    if (prog_c[ti] == 0xFFFFu) {
+        int32_t bars = clamp(t->p[P_PLEN], 1, 8);
+        if (prog_rand(ti) % 100u < ev / 3u)
+            bars = clamp(bars + ((prog_rand(ti) & 1u) ? 1 : -1), 1, 8);
+        prog_len[ti] = (uint16_t)(16 * bars);
+        prog_c[ti] = 0;
+    }
+    pos = prog_c[ti]++;
     if (!pos) {                                     /* a chord starts, or a bar group of silence */
         uint32_t r, d, mask = scale_mask(t), deg[12], n = 0, i;
-        prog_play[ti] = (uint8_t)(rng() % 100u < (uint32_t)t->p[P_PDEN]);
+        prog_play[ti] = (uint8_t)(prog_rand(ti) % 100u < (uint32_t)t->p[P_PDEN]);
         if (!prog_play[ti])
             return;
-        r = rng() % 100u;
+        r = prog_rand(ti) % 100u;
         d = r < 40u ? 0u : r < 65u ? 1u : r < 85u ? 2u : 3u;     /* I most, then IV, V, vi */
-        if (d == prog_deg[ti] && rng() % 100u < 60u) {           /* seldom the same chord twice */
-            r = rng() % 100u;
+        if (d == prog_deg[ti] && prog_rand(ti) % 100u < 60u) {   /* seldom the same chord twice */
+            r = prog_rand(ti) % 100u;
             d = r < 40u ? 0u : r < 65u ? 1u : r < 85u ? 2u : 3u;
         }
+        if (prog_rand(ti) % 100u < ev / 2u)
+            d = 4u + (prog_rand(ti) & 1u);          /* EVOLVE: a ii or a iii */
         prog_deg[ti] = (uint8_t)d;
         if (mask == 0xFFFu)
             mask = SCALE_MASK[1];                   /* CHR: the major scale of ROOT */
@@ -1164,7 +1208,7 @@ static __attribute__((noinline)) void prog_step(track_t *t, uint32_t idx, uint32
     } else if (!prog_play[ti]) {
         return;
     }
-    if (pos != len - 1u)
+    if (pos != (uint32_t)prog_len[ti] - 1u)
         st.flags = SF_SLIDE;                        /* held to the next step; the last one lets go at its GATE */
     seq_step(t, &st, idx, period, SEQ_ROLLED);
 }
@@ -1203,6 +1247,46 @@ static __attribute__((noinline)) void gen_step(track_t *t, uint32_t idx, uint32_
     st.time = ST_NOTE;
     st.vel = (uint8_t)vel;
     seq_step(t, &st, idx, period, SEQ_ROLLED);
+}
+
+/* The generators' own clock (Pelucco): with the transport stopped (and no count-in) a track whose generator is on (the
+ * Pad's progression, BELL's loops) goes on by itself, one step every DIV at the project's BPM, so DENS needs no PLAY.
+ * It starts when DENS comes above 0 (the progression from its first bar) and stops, letting go of what it holds, when
+ * DENS is back to 0. PLAY takes over: seq_start restarts the generators, as before */
+static uint8_t free_on[NTRK];
+static uint16_t free_idx[NTRK];
+static uint32_t free_pos[NTRK];
+static __attribute__((noinline)) void gen_free(track_t *t, uint32_t n)
+{
+    uint32_t ti = trk_index(t), period, len;
+    if (ti >= NTRK)
+        return;
+    if (song.playing || cin_left || !(prog_on(t) || gen_on(t))) {
+        if (free_on[ti] && !song.playing && !cin_left && t->seq_n)
+            seq_release(t);                         /* DENS back to 0: what the generator holds lets go */
+        free_on[ti] = 0;
+        return;
+    }
+    period = div_samples((uint32_t)t->p[P_SDIV]);
+    if (!free_on[ti]) {
+        free_on[ti] = 1;
+        free_idx[ti] = 0;
+        free_pos[ti] = period;                      /* the first step on this block */
+        prog_c[ti] = 0;
+        prog_len[ti] = 0;
+    }
+    free_pos[ti] += n;
+    if (free_pos[ti] < period)
+        return;
+    free_pos[ti] -= period;
+    if (free_pos[ti] >= period)
+        free_pos[ti] = 0;
+    len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
+    if (prog_on(t))
+        prog_step(t, free_idx[ti] % len, period);
+    else
+        gen_step(t, free_idx[ti] % len, period);
+    free_idx[ti]++;
 }
 
 /* step idx plays: its chance (the one roll, as seq_step made it: a step that does not play applies no lock), the
@@ -1512,8 +1596,10 @@ static void events_block(uint32_t n)
     if (aud_req)
         seq_audition();                               /* (STEP PREVIEW: a step sounds, stopped) */
     chain_tick(seq_n);
-    for (i = 0; i < NTRK; i++)
+    for (i = 0; i < NTRK; i++) {
         seq_tick(&trk[i], seq_n);
+        gen_free(&trk[i], n);                         /* (the generators' own clock: the transport stopped) */
+    }
     if (cin_flush)
         cin_record();
     if (song.playing)

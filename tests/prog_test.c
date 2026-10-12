@@ -11,6 +11,7 @@
 #define CHK(c) do { if (!(c)) { printf("prog: FAIL line %d: %s\n", __LINE__, #c); bad++; } } while (0)
 
 static uint8_t at_step[NSTEPS], cn[NSTEPS][4];       /* per step: notes started on it (count, the notes) */
+static uint32_t g_ev, g_seed;
 static uint32_t play(uint32_t dens, uint32_t bars, uint32_t scale, uint32_t root)
 {
     track_t *t;
@@ -21,7 +22,7 @@ static uint32_t play(uint32_t dens, uint32_t bars, uint32_t scale, uint32_t root
     t->engine = t->eng_req = 0;
     t->p[P_VOICE] = V_POLY; t->p[P_VOIC] = VC_CLOSE; t->p[P_CHRD] = 0;
     t->p[P_SLEN] = 16; t->p[P_SGATE] = 90; t->p[P_SSWING] = 0;
-    t->p[P_PDEN] = (int16_t)dens; t->p[P_PLEN] = (int16_t)bars;
+    t->p[P_PDEN] = (int16_t)dens; t->p[P_PLEN] = (int16_t)bars; t->p[P_PEV] = (int16_t)g_ev; t->p[P_PSEED] = (int16_t)g_seed;
     t->p[P_SCALE] = (int16_t)scale; t->p[P_ROOT] = (int16_t)root; t->p[P_TRANS] = 0;
     song.octave = 0;
     memset(at_step, 0, sizeof at_step); memset(cn, 0, sizeof cn);
@@ -63,7 +64,7 @@ int main(void)
             if (d < 4u) { deg[d]++; if (d == prev) rep++; prev = d; }
         }
     }
-    CHK(deg[0] > deg[1] && deg[1] > deg[3] && deg[2] > deg[3] && deg[3] > 5u);   /* I most, all four heard, vi the least */
+    CHK(deg[0] > deg[1] && deg[0] > deg[2] && deg[1] > deg[3] && deg[3] > 5u);   /* I most, all four heard, vi among the least */
     printf("prog: chords %u I %u IV %u V %u vi %u repeats %u\n", chords(), deg[0], deg[1], deg[2], deg[3], rep);
     CHK(rep < chords() / 5u);                            /* seldom the same chord twice */
     play(100, 2, 1, 0);
@@ -79,6 +80,54 @@ int main(void)
         s = pcset(i);
         for (d = 0; d < 4u && s != MIN[d]; d++) ;
         CHK(d < 4u);
+    }
+    {   /* EVOLVE: with it a ii or a iii now and then, a chord a bar longer or shorter; SEED: the same one the same chords */
+        static const uint32_t IIIII[2] = {1u << 2 | 1u << 5 | 1u << 9, 1u << 4 | 1u << 7 | 1u << 11};   /* C major: ii, iii */
+        uint32_t other = 0, odd = 0, k, a[40], b[40], c[40], na = 0, same = 1, diff = 0;
+        g_ev = 100; g_seed = 5;
+        play(100, 2, 1, 0);
+        for (i = 0; i < NSTEPS; i++) {
+            if (!at_step[i]) continue;
+            if (pcset(i) == IIIII[0] || pcset(i) == IIIII[1]) other++;
+            if (i % 32u) odd++;                          /* (a chord not on a 2-bar edge: a length that changed) */
+            if (na < 40u) a[na++] = pcset(i);
+        }
+        CHK(other > 5u && odd > 5u);
+        play(100, 2, 1, 0);                              /* the same SEED again: the same progression */
+        for (i = 0, k = 0; i < NSTEPS && k < 40u; i++) if (at_step[i]) b[k++] = pcset(i);
+        for (i = 0; i < k && i < na; i++) same &= a[i] == b[i];
+        CHK(same && k >= 20u);
+        g_seed = 77;
+        play(100, 2, 1, 0);
+        for (i = 0, k = 0; i < NSTEPS && k < 40u; i++) if (at_step[i]) c[k++] = pcset(i);
+        for (i = 0; i < k && i < na; i++) diff |= a[i] != c[i];
+        CHK(diff);                                       /* another SEED: another progression */
+        printf("prog: EVOLVE 100: ii/iii %u, off the bar grid %u\n", other, odd);
+        g_ev = 0; g_seed = 0;
+    }
+    {   /* the own clock: the transport stopped, DENS above 0 and the blocks go by: chords come, a stop (DENS 0) lets go */
+        track_t *t;
+        uint32_t b, struck = 0, v0;
+        ui_power_on();
+        t = &trk[0];
+        t->engine = t->eng_req = 0;
+        t->p[P_VOICE] = V_POLY; t->p[P_PDEN] = 100; t->p[P_PLEN] = 1; t->p[P_PEV] = 0;
+        song.g[G_CLOCK] = 0; song.g[G_BPM] = 120;
+        song.playing = 0;
+        v0 = vage;
+        for (b = 0; b < 44100u * 10u / CTL; b++) {       /* 10 s: 5 bars of 2 s */
+            uint32_t before = vage;
+            events_block(CTL);
+            if (vage != before) struck++;
+        }
+        CHK(!song.playing && vage != v0 && struck >= 3u);
+        t->p[P_PDEN] = 0;
+        events_block(CTL);
+        CHK(t->seq_n == 0u);                             /* what it held was let go */
+        v0 = vage;
+        for (b = 0; b < 44100u * 4u / CTL; b++) events_block(CTL);
+        CHK(vage == v0);                                 /* and nothing new comes */
+        printf("prog: own clock, transport stopped: %u strikes in 10 s\n", struck);
     }
     if (bad) { printf("PROG TEST FAILED\n"); return 1; }
     printf("progression test passed\n");

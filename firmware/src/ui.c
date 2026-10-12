@@ -390,6 +390,8 @@ static int page_visible(uint32_t i)
 {
     if (PAGES[i].scope == SC_TRACK && PAGES[i].id[0] >= P_LN0 && PAGES[i].id[0] <= P_LN7)
         return TSEL->eng_req % NENGINES == ENGI_DRUM;
+    if (PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] == P_PDEN)   /* GEN (Pelucco): the Pad's chord generator */
+        return trk_index(TSEL) == 0u && !chord_kit(TSEL) && eng_idx(TSEL->eng_req) != ENGI_DRUM;
     if (PAGES[i].id[0] == P_FTYPE)                    /* FILTER (1.5, #104): ANALOG's */
         return ENGINES[TSEL->eng_req % NENGINES] == &ENG_ANALOG;
     if (PAGES[i].graph >= GR_FMOP && PAGES[i].graph <= GR_FMENV)
@@ -1347,16 +1349,17 @@ static void select_engine(uint32_t e)
 
 /* Pelucco: SEQ > AMBIENT, OCT+: the ambient machine. The Pad (part 1) and Echoes (part 3) are drawn anew: one ROOT and one
  * soft SCALE for both, each an engine of its own kinds (eng_allowed; no kit) and a sound of it, the Pad's progression (DENS,
- * BARS) and Echoes' bells (DENS, EVOLVE, RANGE, SEED) switched on, slow attacks and long releases on the Pad, some reverb
- * and delay. The Lead, the Noise, the tempo and the global reverb are the player's: not touched. The transport starts when
- * it is stopped */
+ * BARS, EVOLVE, SEED) and Echoes' bells (DENS, EVOLVE, RANGE, SEED) switched on, slow attacks and long releases on the Pad,
+ * some reverb and delay. The Noise (part 4) gets an AMBI sound of the drawn kind and one note of the scale that goes on for
+ * good (REL at its top: voice.c). The generators run on their own clock (seq.c gen_free): nothing starts the transport. The
+ * Lead, the tempo and the global reverb are the player's: not touched */
 static void ambient_random(void)
 {
     static const uint8_t SCL[8] = {1, 2, 3, 4, 5, 6, 8, 9};      /* N_SCALE: MAJ MIN DOR MIX PEN MPEN PHRY LYD */
     uint32_t root = rng() % 12u, scale = SCL[rng() % 8u], n;
     if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
-    for (n = 0; n < 2u; n++) {
-        uint32_t ti = n ? 2u : 0u, list[NENGINES], nl = 0, e, k, j;
+    for (n = 0; n < 3u; n++) {
+        uint32_t ti = n == 0u ? 0u : n == 1u ? 2u : 3u, list[NENGINES], nl = 0, e, k, j;
         track_t *t = &trk[ti];
         for (e = 0; e < NENGINES; e++)
             if (eng_ok(e) && eng_allowed(ti, e) && !ENGINES[e]->oneshot && !ENGINES[e]->keys && ENGINES[e]->npresets)
@@ -1372,16 +1375,23 @@ static void ambient_random(void)
         t->p[P_ROOT] = (int16_t)root;
         t->p[P_SCALE] = (int16_t)scale;
         t->p[P_MUTE] = 0;
-        if (t->p[P_REV] < 50)
+        if (ti != 3u && t->p[P_REV] < 50)
             t->p[P_REV] = (int16_t)(50u + rng() % 30u);
         if (ti == 0u) {                                        /* the Pad: chords, poly, swelling, long */
             t->p[P_VOICE] = V_POLY;
             t->p[P_PDEN] = (int16_t)(45u + rng() % 46u);
             t->p[P_PLEN] = (int16_t)(2u + rng() % 3u);
+            t->p[P_PEV] = (int16_t)(10u + rng() % 31u);
+            t->p[P_PSEED] = (int16_t)(rng() % 128u);
             if (t->p[P_ATK] < 70)
                 t->p[P_ATK] = (int16_t)(70u + rng() % 30u);
             if (t->p[P_REL] < 85)
                 t->p[P_REL] = (int16_t)(85u + rng() % 25u);
+        } else if (ti == 3u) {                                 /* the Noise: one note, never let go */
+            t->p[P_REL] = 127;
+            t->p[P_ESYNC] = 0;
+            seq_release(t);
+            ambient_drone(t, (uint32_t)clamp(scale_snap(t, 36 + (int32_t)(rng() % 24u)), 0, 127));
         } else if (FELUCCA_BELL && e == ENGI_BELL) {            /* Echoes: the bells play by themselves */
             t->p[P_E4] = (int16_t)(30u + rng() % 41u);
             t->p[P_E5] = (int16_t)(15u + rng() % 36u);
@@ -1393,9 +1403,22 @@ static void ambient_random(void)
         garden[ti] = 0;                                         /* Echoes' garden starts again from the scale */
         gen_restart(ti);
     }
-    if (!song.playing && !seq_counting())
-        transport_req = 1;                                      /* (as the PLAY button starts it) */
     ui_message("AMBIENT MACHINE");
+    ui.force = 1;
+}
+
+/* SEQ > AMBIENT, OCT-: the panic button. The Pad's and Echoes' DENS to 0 (no new notes; what rings fades), the Noise's REL
+ * to its middle (64, as at power-on) and its note let go. The transport, the Lead and the rest are not touched */
+static void ambient_stop(void)
+{
+    track_t *t = &trk[3];
+    trk[0].p[P_PDEN] = 0;
+    if (FELUCCA_BELL && eng_idx(trk[2].eng_req) == ENGI_BELL)
+        trk[2].p[P_E4] = 0;
+    if (FELUCCA_AMBI && eng_idx(t->eng_req) == ENGI_AMBI)
+        t->p[P_REL] = 64;
+    seq_release(t);
+    ui_message("AMBIENT STOP");
     ui.force = 1;
 }
 

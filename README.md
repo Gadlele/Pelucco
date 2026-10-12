@@ -79,16 +79,25 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
 - **Quick layers:** hold FX, GLO, SCL, EDIT, REC or SEQ for shortcuts on the keys and knobs, or double-tap it to
   keep the layer open; one-step undo (SAVE held); REC on every page; OCT+ confirms, OCT- goes back; what can be
   pressed breathes softly instead of blinking
-- **The ambient machine** (Pelucco): SEQ has a fourth page, **AMBIENT** (STEP, DETAIL, AUTOMATION, AMBIENT). **OCT+** draws the **Pad**
-and **Echoes** anew: one random ROOT and one soft SCALE (MAJ, MIN, DOR, MIX, PEN, MPEN, PHRY, LYD) for both, an engine and a sound at
-random for each among those they may use (never a kit), the Pad's progression (DENS, BARS) and Echoes' bells (DENS, EVOLVE, RANGE,
-SEED) switched on, a slow ATK and a long REL on the Pad, reverb on both and delay on Echoes. The Lead, the Noise, the BPM and the global
-reverb are yours: not touched. If the transport is stopped it starts. Press again for another machine.
+- **The ambient machine** (Pelucco): SEQ has a fourth page, **AMBIENT** (STEP, DETAIL, AUTOMATION, AMBIENT). **OCT+** draws the **Pad**,
+**Echoes** and the **Noise** anew: one random ROOT and one soft SCALE (MAJ, MIN, DOR, MIX, PEN, MPEN, PHRY, LYD) for all three, an engine
+and a sound at random for each among those they may use (never a kit), the Pad's progression (DENS, BARS, EVOLVE, SEED) and Echoes' bells
+(DENS, EVOLVE, RANGE, SEED) switched on, a slow ATK and a long REL on the Pad, reverb on both and delay on Echoes. The Noise gets an AMBI
+sound with REL at its top and one note of the scale, which goes on for ever. The Lead, the BPM and the global reverb are yours: not
+touched. **Nothing starts the transport**: the generators have their own clock (below). Press again for another machine; **OCT-** is
+**STOP**: the Pad's and Echoes' DENS to 0, the Noise's REL to 64 and its note let go (the transport and the Lead are not touched; HOME
+leaves the page).
+- **The generators' own clock** (Pelucco): the Pad's progression and Echoes' bells run **with the transport stopped** too, one step every
+DIV at the project's BPM, from the moment DENS is above 0 and until it is back to 0 (what they hold then lets go). PLAY takes over as
+before: the generators start again with it. With an external clock and the transport stopped they run at the BPM of the project.
+- **The Pad's GEN page** (Pelucco): **EDIT > GEN** (after FILTER on ANALOG, before VOICE; not on a kit) holds the Pad's generator:
+**DENS**, **BARS**, **EVOLVE** (now and then a ii or a iii, a chord a bar longer or shorter; default 20) and **SEED** (the same one is
+the same progression). CHORD (SCL) keeps CHRD and VOIC.
 
-**The Noise that never stops** (Pelucco): on the AMBI engine, **REL at its top (127) means infinite**: after the note off the
+**The Noise that never stops** (Pelucco): on the AMBI engine, **REL at its top (127) means infinite**, shown as **INF**: after the note off the
 noise goes on, with the transport stopped too, until REL is turned down (it then fades with that release). A new note replaces
-the sounding one. Nothing starts by itself: play a note (or start the transport on the DRONE pattern) once. All AMBI sounds have
-REL 64 (half), so they let go as before until you turn it up.
+the sounding one. Nothing starts by itself at power-on: play a note (or start the transport on the DRONE pattern) once, or use the
+ambient machine. All AMBI sounds have REL 64 (half), so they let go as before until you turn it up.
 
 **Sounds per part** (Pelucco): browsing follows the part. **Echoes** offers the BELL sounds only, **Noise** the AMBI
   engine only (the older NOISE engine is no longer offered; ARCADE and METAL went with it), **Pad** and **Lead** everything else. This holds for the PRESETS list and its ENG knob and
