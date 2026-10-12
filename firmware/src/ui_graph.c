@@ -2321,8 +2321,11 @@ static void draw_graph(void)
             break;
         case GR_AMBI:
             cv_oy = 0;
+            {   /* FANTASMA: the one ghost, eyes only, big and faint in the middle behind the text (drawn first) */
+                int32_t gh = (int32_t)graph_h() - 14, gw = gh * 4 / 5;
+                cv_ghost(120, 7, gw, gh, T_GRID, T_SURF, 0, 0, T_GRID);
+            }
             panel_note("AMBIENT MACHINE", "[OCT+] RANDOMIZE", "[OCT-] STOP");
-            cv_ghost(30, 14, 32, 40, T_THEME, T_SURF, T_TINT, T_ACCENT, T_TEXT);    /* FANTASMA: the one ghost, eyes only */
             break;
 #if FELUCCA_SLICE
         case GR_SLICES:
