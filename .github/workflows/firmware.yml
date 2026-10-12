@@ -1,9 +1,12 @@
 name: Firmware package (.fwsc)
 # Builds the installable package of the branch it runs on (JieLi toolchain and AC79 SDK are downloaded here).
-# Run it by hand: Actions > Firmware package > Run workflow; the .fwsc is in the run's Artifacts.
+# Runs when a branch named fw-<something> is pushed (e.g. git push origin fantasma:fw-fantasma), or by hand once this
+# file is on the default branch. The .fwsc is in the run's Artifacts.
 # NOT TESTED ON AN FM-1: a beta. Keep M-VAVE's FM-1.fwsc at hand to go back.
 on:
   workflow_dispatch:
+  push:
+    branches: ['fw-*']
 jobs:
   fwsc:
     runs-on: ubuntu-latest
