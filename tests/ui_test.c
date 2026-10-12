@@ -3884,7 +3884,7 @@ static int test_ambient(void)
         seen_root |= 1 << pad->p[P_ROOT];
         engs |= 1u << pad->eng_req;
         eng_ok_ &= eng_allowed(0, pad->eng_req) && pad->eng_req != ENGI_DRUM && (!FELUCCA_BELL || ech->eng_req == ENGI_BELL);
-        gen_ok &= pad->p[P_PDEN] > 0 && pad->p[P_PLEN] >= 1 && pad->p[P_PLEN] <= 8 && pad->p[P_VOICE] == V_POLY &&
+        gen_ok &= pad->p[P_PDEN] > 0 && pad->p[P_PLEN] >= 0 && pad->p[P_PLEN] <= 8 && pad->p[P_VOICE] == V_POLY &&
                   pad->p[P_REV] >= 50 && ech->p[P_REV] >= 50 && !pad->p[P_MUTE] && !ech->p[P_MUTE];
         if (FELUCCA_BELL) gen_ok &= ech->p[P_E4] > 0 && ech->p[P_E5] > 0 && ech->p[P_E6] >= 1 && ech->p[P_E6] <= 2;
         { track_t l2; memcpy(&l2, &trk[1], sizeof l2); l2.p[P_ROOT] = lead.p[P_ROOT]; l2.p[P_SCALE] = lead.p[P_SCALE];
@@ -3904,7 +3904,7 @@ static int test_ambient(void)
         ok = 1;
         for (i = 0; i < 40; i++) {
             press(B_OCTUP); frames(48);
-            ok &= pad->p[P_PEV] >= 10 && pad->p[P_PEV] <= 40 && pad->p[P_PSEED] >= 0 && pad->p[P_PSEED] < 128 &&
+            ok &= pad->p[P_PEV] >= 3 && pad->p[P_PEV] <= 8 && pad->p[P_PSEED] >= 0 && pad->p[P_PSEED] < 128 &&
                   eng_idx(nz->eng_req) == ENGI_AMBI && nz->p[P_REL] == 127 && !nz->p[P_ESYNC] && !nz->p[P_MUTE] &&
                   nz->p[P_ROOT] == pad->p[P_ROOT] && nz->p[P_SCALE] == pad->p[P_SCALE] && nz->seq_n == 1u;
         }

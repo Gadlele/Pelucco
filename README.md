@@ -91,14 +91,14 @@ leaves the page).
 DIV at the project's BPM, from the moment DENS is above 0 and until it is back to 0 (what they hold then lets go). PLAY takes over as
 before: the generators start again with it. With an external clock and the transport stopped they run at the BPM of the project.
 - **The Pad's GEN page** (Pelucco): **EDIT > GEN** (after FILTER on ANALOG, before VOICE; not on a kit) holds the Pad's generator:
-**DENS**, **BARS**, **EVOLVE** (now and then a ii or a iii, a chord a bar longer or shorter; default 20) and **SEED** (the same one is
+**DENS**, **BARS**, **EVOLVE** (how many chords to choose among, 1 to 8: I IV V vi, then ii, iii, vii° and as eighth the bVII, each rarer than the last; default 4; BARS can be RND for a random 1 to 6 bars) and **SEED** (the same one is
 the same progression). CHORD (SCL) keeps CHRD and VOIC.
 
 **The Noise that never stops** (Pelucco): on the AMBI engine, **REL at its top (127) means infinite**, shown as **INF**: after the note off the
 noise goes on, with the transport stopped too, until REL is turned down (it then fades with that release). A tap shorter than
 the attack still ends in a drone at the SUS level (the envelope goes on rising), and a new note is crossed into: the old one fades out
 as the new one rises, with no hole between. Nothing starts by itself at power-on (the Noise's steps are empty too): play a note once, or use the
-ambient machine. All AMBI sounds have REL 64 (half), so they let go as before until you turn it up.
+ambient machine. All AMBI sounds have REL 64 (half), so they let go as before until you turn it up. The ambient machine (and any sound you pick on the Noise part) puts the Noise at INF and keeps it sounding: if the drone is ever lost it is struck again, so the Noise is always on, through preset changes too.
 
 **Sounds per part** (Pelucco): browsing follows the part. **Echoes** offers the BELL sounds only, **Noise** the AMBI
   engine only (the older NOISE engine is no longer offered; ARCADE and METAL went with it), **Lead** everything else, and the **Pad** only the engines that make pads: ANALOG, PHASE, VOICE,
@@ -434,11 +434,11 @@ note of the current chord each, root, third, fifth and again an octave up. OFF i
 always plays single notes.
 
 **The Pad plays itself** (Pelucco): SCL > CHORD has two more knobs, **DENS** and **BARS**. With DENS above 0 the Pad stops reading
-its steps and plays chords by itself, the diatonic triads **I, IV, V and vi** of its ROOT and SCALE (in the VOIC voicing; in a
+its steps and plays chords by itself, the diatonic triads of its ROOT (**I, IV, V, vi** and, with EVOLVE higher, ii, iii, vii° and bVII) and SCALE (in the VOIC voicing; in a
 minor scale they are i, iv, v and VI), with I the most often and the same chord seldom twice. A chord is struck once and held for
 BARS bars of 16 steps (at the track's DIV), so a slow ATK swells and a long REL carries it into the next one. DENS is the chance
 that a bar group has its chord: 100 is a chord all the time, lower leaves silences where the reverb rings. DENS starts at 0, so
-nothing changes until you turn it. The keys still play over it as ever.
+nothing changes until you turn it; the first chord after a start always sounds. The keys still play over it as ever.
 
 OMNI also has FoMni's modifiers: **ENV held** makes the button's chord minor, **LFO held** adds the seventh (C7 from a major
 button, Cm7 from a minor one), both together a minor seventh; ENV and LFO then open no page when let go (they do alone). The

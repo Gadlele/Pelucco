@@ -1222,6 +1222,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
 {
     const engine_t *e = ENGINES[t->eng_req % NENGINES];
     uint32_t i;
+    int inf;
 #if !FELUCCA_FM4
     if (t->eng_req % NENGINES == ENGI_DIGITAL) {
         fm4_load_preset(t, pi);
@@ -1233,7 +1234,9 @@ static void apply_preset_to(track_t *t, uint32_t pi)
         return;                                       /* (core.h drum_from_perc) */
     }
     load_begin(t, UNDO_SOUND);
-    panic_req |= (uint8_t)(1u << trk_index(t));       /* MONO/POLY may change: release what sounds */
+    inf = noise_inf(t);                               /* (Pelucco: the Noise at INF is always on: a new sound plays on, REL stays) */
+    if (!inf)
+        panic_req |= (uint8_t)(1u << trk_index(t));   /* MONO/POLY may change: release what sounds */
     t->user = 0;
     if (t == TSEL)
         sync_reload = 1;
@@ -1251,7 +1254,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_ATK] = e->presets[pi].env[0];
     t->p[P_DEC] = e->presets[pi].env[1];
     t->p[P_SUS] = e->presets[pi].env[2];
-    t->p[P_REL] = e->presets[pi].env[3];
+    t->p[P_REL] = inf ? 127 : e->presets[pi].env[3];
     t->p[P_ED_FLT] = e->presets[pi].fenv;
     t->p[P_VOICE] = e->presets[pi].mono ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
     {   /* the sends */
@@ -1392,7 +1395,7 @@ static void ambient_random(void)
             t->p[P_VOICE] = V_POLY;
             t->p[P_PDEN] = (int16_t)(45u + rng() % 46u);
             t->p[P_PLEN] = (int16_t)(2u + rng() % 3u);
-            t->p[P_PEV] = (int16_t)(10u + rng() % 31u);
+            t->p[P_PEV] = (int16_t)(3u + rng() % 6u);
             t->p[P_PSEED] = (int16_t)(rng() % 128u);
             if (t->p[P_ATK] < 70)
                 t->p[P_ATK] = (int16_t)(70u + rng() % 30u);

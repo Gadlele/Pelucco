@@ -77,6 +77,7 @@ static const char *const N_ENGNAME[] = {"ANALOG", FELUCCA_FM4 ? "DIGITAL" : "-",
 #endif
 };
 
+static const char *const N_BARS[] = {"RND", "1", "2", "3", "4", "5", "6", "7", "8"};   /* the Pad GEN page: bars a chord (RND: 1 to 6 at random) */
 #define PD(l, f, mn, mx, df) {l, f, mn, mx, df, 0, 0}
 #define PE(l, n, df) {l, F_ENUM, 0, (int16_t)(sizeof(n) / sizeof(n[0]) - 1), df, n, 0}
 
@@ -166,8 +167,8 @@ static const param_desc_t TP[P_COUNT] = {
     [P_FTYPE] = PE("TYPE", N_FTYPE, 0),           /* 1.5 (#104): ANALOG's filter, LP = as before (eng_analog.c) */
     [P_ESYNC] = PE("ESYNC", N_ONOFF, 0),          /* 1.5 (#175): OFF = ATK DEC REL in ms, as before (voice.c esync) */
     [P_PDEN] = PD("DENS", F_INT, 0, 100, 0),      /* Pelucco: the Pad plays I IV V vi by itself; DENS = how often a bar has its chord, 0 = off */
-    [P_PLEN] = PD("BARS", F_INT, 1, 8, 2),        /* .. each chord lasts BARS bars of 16 steps */
-    [P_PEV] = PD("EVOLVE", F_INT, 0, 100, 20),    /* .. EVOLVE: now and then a ii or iii, a bar more or less */
+    [P_PLEN] = PE("BARS", N_BARS, 2),             /* .. each chord lasts BARS bars of 16 steps (0: RND, a number of bars at random) */
+    [P_PEV] = PD("EVOLVE", F_INT, 1, 8, 4),      /* .. EVOLVE: how many chords it chooses between, I IV V vi ii iii vii bVII (the rarer the later) */
     [P_PSEED] = PD("SEED", F_INT, 0, 127, 0),     /* .. SEED: the same one is the same progression */
 };
 
