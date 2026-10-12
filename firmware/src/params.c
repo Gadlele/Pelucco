@@ -168,7 +168,7 @@ static const param_desc_t TP[P_COUNT] = {
     [P_ESYNC] = PE("ESYNC", N_ONOFF, 0),          /* 1.5 (#175): OFF = ATK DEC REL in ms, as before (voice.c esync) */
     [P_PDEN] = PD("DENS", F_INT, 0, 100, 0),      /* Pelucco: the Pad plays I IV V vi by itself; DENS = how often a bar has its chord, 0 = off */
     [P_PLEN] = PE("BARS", N_BARS, 2),             /* .. each chord lasts BARS bars of 16 steps (0: RND, a number of bars at random) */
-    [P_PEV] = PD("EVOLVE", F_INT, 1, 8, 4),      /* .. EVOLVE: how many chords it chooses between, I IV V vi ii iii vii bVII (the rarer the later) */
+    [P_PEV] = PD("CHORDS", F_INT, 1, 8, 4),      /* .. EVOLVE: how many chords it chooses between, I IV V vi ii iii vii bVII (the rarer the later) */
     [P_PSEED] = PD("SEED", F_INT, 0, 127, 0),     /* .. SEED: the same one is the same progression */
 };
 
@@ -189,7 +189,7 @@ static const param_desc_t *ins_desc(int32_t type, uint32_t k)
 }
 
 static const param_desc_t GP[G_COUNT] = {
-    [G_BPM] = PD("BPM", F_BPM, 30, 240, 120),
+    [G_BPM] = PD("BPM", F_BPM, 30, 240, 30),
     [G_SWING] = PD("SWG", F_PCT, 0, 100, 0),
     [G_CLOCK] = PE("CLK", N_CLOCK, 0),
     [G_TUNE] = PD("TUNE", F_INT, -50, 50, 0),     /* cents; edited on MENU > AUDIO TUNE (1.2: menu_items.c MI_TUNE) */

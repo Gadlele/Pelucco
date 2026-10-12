@@ -1407,7 +1407,7 @@ static void ambient_random(void)
             seq_release(t);
             ambient_drone(t, (uint32_t)clamp(scale_snap(t, 36 + (int32_t)(rng() % 24u)), 0, 127));
         } else if (FELUCCA_BELL && e == ENGI_BELL) {            /* Echoes: the bells play by themselves */
-            t->p[P_E4] = (int16_t)(30u + rng() % 41u);
+            t->p[P_E4] = (int16_t)(20u + rng() % 11u);
             t->p[P_E5] = (int16_t)(15u + rng() % 36u);
             t->p[P_E6] = (int16_t)(1u + rng() % 2u);
             t->p[P_E7] = (int16_t)(rng() % 128u);

@@ -190,6 +190,7 @@ static void ui_power_on(void)
     memset(up_bank, 0, sizeof up_bank);
     for (i = 0; i < G_COUNT; i++)
         song.g[i] = GP[i].def;
+    song.g[G_BPM] = 120;                          /* (the tests count in 120 BPM; power-on is 30) */
     undo_depth++;
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
@@ -3887,7 +3888,7 @@ static int test_ambient(void)
         eng_ok_ &= eng_allowed(0, pad->eng_req) && pad->eng_req != ENGI_DRUM && (!FELUCCA_BELL || ech->eng_req == ENGI_BELL);
         gen_ok &= pad->p[P_PDEN] > 0 && pad->p[P_PLEN] >= 0 && pad->p[P_PLEN] <= 8 && pad->p[P_VOICE] == V_POLY &&
                   pad->p[P_REV] >= 50 && ech->p[P_REV] >= 50 && !pad->p[P_MUTE] && !ech->p[P_MUTE];
-        if (FELUCCA_BELL) gen_ok &= ech->p[P_E4] > 0 && ech->p[P_E5] > 0 && ech->p[P_E6] >= 1 && ech->p[P_E6] <= 2;
+        if (FELUCCA_BELL) gen_ok &= ech->p[P_E4] >= 20 && ech->p[P_E4] <= 30 && ech->p[P_E5] > 0 && ech->p[P_E6] >= 1 && ech->p[P_E6] <= 2;
         { track_t l2; memcpy(&l2, &trk[1], sizeof l2); l2.p[P_ROOT] = lead.p[P_ROOT]; l2.p[P_SCALE] = lead.p[P_SCALE];
           same &= !memcmp(&lead, &l2, sizeof lead) && trk[1].p[P_ROOT] == trk[0].p[P_ROOT] && trk[1].p[P_SCALE] == trk[0].p[P_SCALE] && song.g[G_BPM] == bpm; }
     }
@@ -6235,7 +6236,7 @@ static int test_screen_off(void)
     for (i = 0; i < 20u; i++) turn(EN_K1, 1);        /* a knob turned to wake it, still turning (on past the wake) */
     ok = scr_woke(n) && *vp == v0;
     turn(EN_PRESET, 1); turn(EN_ALGO, 1); turn(EN_SELECT, 1); turn(EN_K4, -1);
-    ok &= *vp == v0 && song.sel == 0u && song.g[G_BPM] == GP[G_BPM].def && scrn.eat;
+    ok &= *vp == v0 && song.sel == 0u && song.g[G_BPM] == 120 && scrn.eat;
     frames(400u);                                     /* at rest SCR_EAT_MS: the knobs are the page's again */
     turn(EN_K1, 1);
     ok &= *vp != v0;
