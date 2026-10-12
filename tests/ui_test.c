@@ -5915,16 +5915,16 @@ static int test_roles(void)
          TRK_DEF[1][0] == 0 && str_eq(ENGINES[0]->presets[TRK_DEF[1][1]].name, "SAW LEAD") &&
          TRK_DEF[2][0] == (FELUCCA_BELL ? ENGI_BELL : 3) && TRK_DEF[3][0] == 3 &&
          (FELUCCA_LOFI || (str_eq(ENGINES[3]->name, "AMBI") && str_eq(ENGINES[3]->presets[TRK_DEF[3][1]].name, "SEA"))) &&
-         TRK_DEF[3][2] == 14 && str_eq(PATTERNS[13].name, "DRONE");
-    bad += check("  power-on parts: FM6 PAD, ANALOG SAW LEAD, the bells, AMBI SEA on the DRONE pattern", ok);
-    {   /* as main.c felucca_init loads the noise track: its pattern is the held note, the others' are empty */
+         TRK_DEF[3][2] == 0 && str_eq(PATTERNS[13].name, "DRONE") && trk[3].step[0].time == ST_REST;
+    bad += check("  power-on parts: FM6 PAD, ANALOG SAW LEAD, the bells, AMBI SEA, its steps empty", ok);
+    {   /* the NOISE track starts with empty steps (the DRONE pattern is still in SAVE > PHRASES for whoever wants it) */
         track_t *t = &trk[3];
+        uint32_t i;
         ui_power_on();
-        set_engine_of(t, TRK_DEF[3][0]);
-        apply_preset_to(t, TRK_DEF[3][1]);
-        load_pat16(t, PATTERNS[TRK_DEF[3][2] - 1u].note, PATTERNS[TRK_DEF[3][2] - 1u].flags);
-        ok = t->step[0].n == 1u && t->step[0].note[0] == 48 && t->step[1].time == ST_TIE;
-        bad += check("  the NOISE track's DRONE: a C3 held through the pattern", ok);
+        ok = PATTERNS[13].note[0] == 48 && PATTERNS[13].flags[1] != 0;
+        for (i = 0; i < 16u; i++)
+            ok &= t->step[i].time == ST_REST && t->step[i].n == 0u;
+        bad += check("  the NOISE track's steps are empty at power-on; the DRONE pattern (C3 held) is still a phrase", ok);
     }
     {   /* the colour follows the track (gfx.c ux_turn, ui_draw.c track_tint_apply): THEME turns, the rest stays */
         uint16_t th[4], bg;

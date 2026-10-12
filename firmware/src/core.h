@@ -155,7 +155,7 @@ static int drum_from_perc(uint32_t engine, int16_t *e)
 enum { V_POLY, V_MONO, V_LEGATO, V_UNISON };   /* P_VOICE */
 typedef struct {
     uint8_t note, vel, gate, active;
-    uint8_t stage;               /* env: 0 off, 1 attack, 2 decay/sustain, 3 release */
+    uint8_t stage;               /* env: 0 off, 1 attack, 2 decay/sustain, 3 release, (4 given up, 5 AMBI INF crossfade out: voice.c) */
     uint8_t side;                /* SPREAD (fx.c mix_spread): 0 left of PAN, 1 right; set as the voice starts */
     int32_t env;                 /* Q24 */
     int32_t env_out;             /* last control-rate amplitude, Q15 */

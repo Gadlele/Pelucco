@@ -95,8 +95,9 @@ before: the generators start again with it. With an external clock and the trans
 the same progression). CHORD (SCL) keeps CHRD and VOIC.
 
 **The Noise that never stops** (Pelucco): on the AMBI engine, **REL at its top (127) means infinite**, shown as **INF**: after the note off the
-noise goes on, with the transport stopped too, until REL is turned down (it then fades with that release). A new note replaces
-the sounding one. Nothing starts by itself at power-on: play a note (or start the transport on the DRONE pattern) once, or use the
+noise goes on, with the transport stopped too, until REL is turned down (it then fades with that release). A tap shorter than
+the attack still ends in a drone at the SUS level (the envelope goes on rising), and a new note is crossed into: the old one fades out
+as the new one rises, with no hole between. Nothing starts by itself at power-on (the Noise's steps are empty too): play a note once, or use the
 ambient machine. All AMBI sounds have REL 64 (half), so they let go as before until you turn it up.
 
 **Sounds per part** (Pelucco): browsing follows the part. **Echoes** offers the BELL sounds only, **Noise** the AMBI
@@ -412,7 +413,7 @@ selected track's part, and the tracks' rows lead with it ("PAD / SOFT PAD"). HOM
 (track 1) has its sound's first knob, **ATK** (the swell in), **REL** (the tail out) and **REV** (the space); **ECHOES**
 (track 3, the BELL engine) has **DENS** and **EVOLVE** of the generator, then the **SCL** (the scale the bells are drawn from, on the track's ROOT, which is set on the SCL page: MAJ, MIN, DOR, PHRY, PEN ..; another scale starts the garden again from it) and the **REV** send (the delay is on its FX page); LEAD and NOISE keep
 their engine's own four. At power-on: the PAD is FM6 PAD (CHRD OFF: OMNI is one turn of SCL > CHORD away), the LEAD ANALOG SAW LEAD, ECHOES the bells,
-NOISE the AMBI sea on the DRONE pattern (press PLAY and it sounds, for as long as it plays).
+NOISE the AMBI sea, its steps empty (play a key, or use the ambient machine; REL at its top makes it endless).
 
 **A colour for each part** (Pelucco): the screen's theme colour follows the selected track: the palette's own for the PAD, its hue
 turned for the LEAD (warm), ECHOES (green) and NOISE (violet), whichever palette is chosen (the background, the text and the

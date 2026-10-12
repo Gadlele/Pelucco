@@ -524,10 +524,12 @@ static uint32_t esync_one(uint32_t quarter, int32_t v, uint32_t i)
     x = x - x2 / 2u + x3 / 6u - x4 / 24u;
     return x < 1u ? 1u : x > 65535u ? 65535u : x;
 }
+static uint8_t ambi_inf;                                /* Pelucco: this track's release is AMBI's infinite one (esync_coef) */
 static __attribute__((noinline)) void esync_coef(const track_t *t)   /* (not inlined: its divides stay out of the
                                                                     * audio ISR's loop over the voices) */
 {
     const int16_t *p = t->p;
+    ambi_inf = 0;
     if (p[P_ESYNC]) {
         uint32_t q = beat_samples();
         esync_k[0] = esync_one(q, p[P_ATK], 0);
@@ -537,8 +539,10 @@ static __attribute__((noinline)) void esync_coef(const track_t *t)   /* (not inl
         esync_k[0] = ENV_LIN[p[P_ATK] & 127];
         esync_k[1] = ENV_EXP[p[P_DEC] & 127];
         esync_k[2] = ENV_EXP[p[P_REL] & 127];
-        if (FELUCCA_AMBI && t->engine == ENGI_AMBI && p[P_REL] >= 127)
-            esync_k[2] = 0;                             /* Pelucco: AMBI with REL at its top never lets go (the noise goes on after
+        if (FELUCCA_AMBI && t->engine == ENGI_AMBI && p[P_REL] >= 127) {
+            esync_k[2] = 0;
+            ambi_inf = 1;
+        }                             /* Pelucco: AMBI with REL at its top never lets go (the noise goes on after
                                                          * the note off, stop included); turn REL down and it fades */
     }
 }
@@ -560,8 +564,26 @@ static int32_t env_tick(track_t *t, voice_t *v)
         v->env += mulq16(sus - v->env, esync_k[1]);
         break;
     case 3:
+        if (ambi_inf) {                                 /* Pelucco, AMBI at INF: the note off holds the voice, and a tap shorter than the
+                                                         * attack goes on rising to SUS (a drone at its level, not a whisper) */
+            if (v->env < sus) {
+                v->env += (int32_t)esync_k[0];
+                if (v->env > sus)
+                    v->env = sus;
+            }
+            break;
+        }
         v->env -= mulq16(v->env, esync_k[2]);
         if (v->env < (1 << 12)) {
+            v->env = 0;
+            v->stage = 0;
+            v->active = 0;
+        }
+        break;
+    case 5:                                             /* Pelucco, AMBI at INF: replaced by a newer note; it fades out as that one
+                                                         * rises (ATK's step), so the two cross */
+        v->env -= (int32_t)esync_k[0];
+        if (v->env <= 0) {
             v->env = 0;
             v->stage = 0;
             v->active = 0;
