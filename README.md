@@ -83,8 +83,8 @@ Multi-engine synthesizer firmware for the M-VAVE FM-1. Please report what you fi
 **Echoes** and the **Noise** anew: one random ROOT and one soft SCALE (MAJ, MIN, DOR, MIX, PEN, MPEN, PHRY, LYD) for all three, an engine
 and a sound at random for each among those they may use (never a kit), the Pad's progression (DENS, BARS, EVOLVE, SEED) and Echoes' bells
 (DENS, EVOLVE, RANGE, SEED) switched on, a slow ATK and a long REL on the Pad, reverb on both and delay on Echoes. The Noise gets an AMBI
-sound with REL at its top and one note of the scale, which goes on for ever. The Lead, the BPM and the global reverb are yours: not
-touched. **Nothing starts the transport**: the generators have their own clock (below). Press again for another machine; **OCT-** is
+sound with REL at its top and one note of the scale, which goes on for ever. The **Lead** gets the same ROOT and SCALE (only those: you can play
+along on it); its sound, the BPM and the global reverb are yours: not touched. **Nothing starts the transport**: the generators have their own clock (below). Press again for another machine; **OCT-** is
 **STOP**: the Pad's and Echoes' DENS to 0, the Noise's REL to 64 and its note let go (the transport and the Lead are not touched; HOME
 leaves the page).
 - **The generators' own clock** (Pelucco): the Pad's progression and Echoes' bells run **with the transport stopped** too, one step every

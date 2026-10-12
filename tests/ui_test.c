@@ -3887,14 +3887,15 @@ static int test_ambient(void)
         gen_ok &= pad->p[P_PDEN] > 0 && pad->p[P_PLEN] >= 1 && pad->p[P_PLEN] <= 8 && pad->p[P_VOICE] == V_POLY &&
                   pad->p[P_REV] >= 50 && ech->p[P_REV] >= 50 && !pad->p[P_MUTE] && !ech->p[P_MUTE];
         if (FELUCCA_BELL) gen_ok &= ech->p[P_E4] > 0 && ech->p[P_E5] > 0 && ech->p[P_E6] >= 1 && ech->p[P_E6] <= 2;
-        same &= !memcmp(&lead, &trk[1], sizeof lead) && song.g[G_BPM] == bpm;
+        { track_t l2; memcpy(&l2, &trk[1], sizeof l2); l2.p[P_ROOT] = lead.p[P_ROOT]; l2.p[P_SCALE] = lead.p[P_SCALE];
+          same &= !memcmp(&lead, &l2, sizeof lead) && trk[1].p[P_ROOT] == trk[0].p[P_ROOT] && trk[1].p[P_SCALE] == trk[0].p[P_SCALE] && song.g[G_BPM] == bpm; }
     }
     (void)seen_eng;
     bad += check("ambient machine: the Pad and Echoes share the ROOT and SCALE", root_ok);
     bad += check("  .. over 60 draws every ROOT of a dozen shows up, several scales, several Pad engines (never a kit)",
                  __builtin_popcount((unsigned)seen_root) >= 9 && __builtin_popcount(scales) >= 5 && __builtin_popcount(engs) >= 4 && eng_ok_);
     bad += check("  the Pad's DENS / BARS and Echoes' DENS / EVOLVE / RANGE above zero, poly, with reverb", gen_ok);
-    bad += check("  the Lead and the BPM are left alone", same);
+    bad += check("  the Lead gets the same ROOT and SCALE and nothing else; the BPM is left alone", same);
     song.playing = 0; transport_req = 0;
     press(B_OCTUP); frames(48);
     bad += check("  the transport is not started (the generators have their own clock); the page is left as it was", transport_req == 0u && !song.playing && cur_page()->graph == GR_AMBI);

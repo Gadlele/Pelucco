@@ -1352,7 +1352,8 @@ static void select_engine(uint32_t e)
  * BARS, EVOLVE, SEED) and Echoes' bells (DENS, EVOLVE, RANGE, SEED) switched on, slow attacks and long releases on the Pad,
  * some reverb and delay. The Noise (part 4) gets an AMBI sound of the drawn kind and one note of the scale that goes on for
  * good (REL at its top: voice.c). The generators run on their own clock (seq.c gen_free): nothing starts the transport. The
- * Lead, the tempo and the global reverb are the player's: not touched */
+ * Lead gets the same ROOT and SCALE (nothing else: its sound is the player's), so it can be played along; the tempo and the global
+ * reverb are the player's too: not touched */
 static void ambient_random(void)
 {
     static const uint8_t SCL[8] = {1, 2, 3, 4, 5, 6, 8, 9};      /* N_SCALE: MAJ MIN DOR MIX PEN MPEN PHRY LYD */
@@ -1403,6 +1404,8 @@ static void ambient_random(void)
         garden[ti] = 0;                                         /* Echoes' garden starts again from the scale */
         gen_restart(ti);
     }
+    trk[1].p[P_ROOT] = (int16_t)root;                           /* the Lead: only ROOT and SCALE, to play along on the same scale */
+    trk[1].p[P_SCALE] = (int16_t)scale;
     ui_message("AMBIENT MACHINE");
     ui.force = 1;
 }
