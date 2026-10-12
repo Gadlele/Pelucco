@@ -42,7 +42,7 @@ static const char *const PRESET_CAT[16] = {
 #if FELUCCA_SLICE
     "DD",                        /* 13 SLICE: CHOP, STUTTER */
 #else
-    "UUUKUFPKFUUUUUUUU",               /* 13 BELL: BELL, GLASS, CHIME, MUSBOX, TUBULAR, GONG, SHIMMER, PURE, RAIN, TEMPLE, SNOWFALL */
+    "UUUUUUUUUUUUUUU",                 /* 13 BELL: THUMB, TOY, HEARTH, AMBER, COPPER, SOFT TOLL, SILK, COTTON, PETAL, HALO, DAWN, PRAYER, CLOISTER, DEW, WIND CHIME */
 #endif
 };
 static uint32_t preset_cat(uint32_t e, uint32_t k)    /* factory preset k of engine e */

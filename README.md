@@ -105,8 +105,8 @@ ambient machine. All AMBI sounds have REL 64 (half), so they let go as before un
   for the EDIT layer; a project, a user preset or MIDI can still put another sound on a part.
 - **Warm ambient sounds** (Pelucco): soft, slow presets for the three tonal parts. Pad: ANALOG WARM PAD, TAPE STR, DUSK PAD,
   SUN PAD, HUSH (a drone), WHEEL AIR ORGAN, VOICE SOFT CHOIR and BREATH, GRAIN WARM CLOUD and SLOW FROST, PHASE WARM STR (attacks of
-  2-6 s, long releases). Lead: ANALOG SOFT LEAD, FLUTE, GLASS LEAD, MELLOW SAW. Echoes: BELL FELT, LULLABY, SOFT CHIME, DEEP BELL,
-  WARM RAIN, MOONLIGHT. Add a little REV (the AMBI type for the longest tails).
+  2-6 s, long releases). Lead: ANALOG SOFT LEAD, FLUTE, GLASS LEAD, MELLOW SAW. Echoes: the 15 BELL sounds (wooden: THUMB, TOY, HEARTH, AMBER, COPPER, SOFT TOLL; soft: SILK, COTTON, PETAL, HALO, DAWN,
+  PRAYER, CLOISTER; bright but gentle: DEW, WIND CHIME). Add a little REV (the AMBI type for the longest tails).
 - **Presets:** factory presets, 32 user preset slots and 4 projects, named on the device (an FM6
   sound keeps its own patch in both); user presets get a category, and a project can get a random name; projects
   from every earlier version load. The PRESETS knob changes the sound from every page that is not a list.
