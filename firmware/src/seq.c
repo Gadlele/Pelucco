@@ -923,6 +923,33 @@ static void ambient_drone(track_t *t, uint32_t note)
     t->seq_off = 8u * (uint32_t)FS;
 }
 
+/* The Noise that is always on (Pelucco): on the Noise part (track 4) with the AMBI engine, REL at its top (INF) means the
+ * noise never stops, with no key needed: when nothing sounds on it (the engine has just been switched, a preset was loaded
+ * in an older version, the voice was cut) a note starts again, a moment later. Below INF it does nothing (its sound lets go
+ * as REL says), and at power-on REL is 64: nothing starts by itself */
+static inline int noise_inf(const track_t *t)
+{
+    return FELUCCA_AMBI && trk_index(t) == 3u && eng_idx(t->eng_req) == ENGI_AMBI && t->p[P_REL] >= 127 && !t->p[P_ESYNC];
+}
+static uint8_t noise_wait;
+static void noise_keep(track_t *t)
+{
+    uint32_t i;
+    if (!noise_inf(t) || t->engine != ENGI_AMBI || kb_boot_hold) {
+        noise_wait = 0;
+        return;
+    }
+    for (i = 0; i < NVOICE; i++)
+        if (t->v[i].active) {
+            noise_wait = 0;
+            return;
+        }
+    if (++noise_wait < 8u)                           /* (a few blocks: a note just sent has not started yet) */
+        return;
+    noise_wait = 0;
+    ambient_drone(t, (uint32_t)clamp(scale_snap(t, 36 + t->p[P_ROOT]), 0, 127));
+}
+
 static void seq_stop(void)
 {
     uint32_t i;
@@ -1133,12 +1160,12 @@ static uint16_t prog_c[NTRK];                      /* steps into the chord */
 static uint16_t prog_len[NTRK];                    /* .. of this many (0: a chord to choose) */
 static uint32_t prog_s[NTRK];                      /* the progression's own random state (SEED) */
 static uint8_t prog_sd[NTRK];
-static uint8_t prog_deg[NTRK] = {0}, prog_play[NTRK];
+static uint8_t prog_deg[NTRK] = {0}, prog_play[NTRK], prog_new[NTRK];   /* prog_new: the first chord after a restart always sounds */
 static inline uint32_t prog_on(const track_t *t)
 {
     return t->p[P_PDEN] > 0 && trk_index(t) < PROG_TRACKS && !chord_kit(t);
 }
-static void gen_restart(uint32_t k) { gen[k].ok = 0; prog_c[k] = 0; prog_len[k] = 0; prog_s[k] = 0; prog_play[k] = 0; prog_deg[k] = 0xFFu; }
+static void gen_restart(uint32_t k) { gen[k].ok = 0; prog_c[k] = 0; prog_len[k] = 0; prog_s[k] = 0; prog_play[k] = 0; prog_deg[k] = 0xFFu; prog_new[k] = 1; }
 static uint32_t prog_rand(uint32_t ti)               /* xorshift32: the same SEED is the same progression */
 {
     uint32_t x = prog_s[ti];
@@ -1148,12 +1175,25 @@ static uint32_t prog_rand(uint32_t ti)               /* xorshift32: the same SEE
     prog_s[ti] = x;
     return x >> 8;
 }
-/* The Pad's progression, chord by chord: I IV V vi (I most), and with EVOLVE above 0 now and then a ii or a iii, a chord
- * that lasts a bar more or less than BARS. SEED: the same one is the same progression (it starts again with it) */
+/* The Pad's progression, chord by chord. EVOLVE (1..8) is how many chords it chooses between, from the commonest to the
+ * rarest: I IV V vi, then ii, iii, vii and a bVII (not in the scale: the major chord a tone below ROOT); each is chosen less
+ * often than the one before (PROG_W), and seldom the same one twice. BARS bars a chord (0: RND, 1 to 6 at random). SEED:
+ * the same one is the same progression (it starts again with it) */
+static const uint8_t PROG_DEG[8] = {0, 3, 4, 5, 1, 2, 6, 10};   /* scale degrees from 0; the last: 10 semitones above ROOT */
+static const uint8_t PROG_W[8] = {30, 22, 20, 15, 8, 5, 3, 2};
+static uint32_t prog_pick(uint32_t ti, uint32_t n)
+{
+    uint32_t tot = 0, r, i;
+    for (i = 0; i < n; i++)
+        tot += PROG_W[i];
+    r = prog_rand(ti) % tot;
+    for (i = 0; i + 1u < n && r >= PROG_W[i]; i++)
+        r -= PROG_W[i];
+    return i;
+}
 static __attribute__((noinline)) void prog_step(track_t *t, uint32_t idx, uint32_t period)
 {
-    static const uint8_t DEG[6] = {0, 3, 4, 5, 1, 2};    /* I IV V vi ii iii: scale degrees, from 0 */
-    uint32_t ti = trk_index(t), seed = (uint32_t)t->p[P_PSEED] & 127u, ev = (uint32_t)clamp(t->p[P_PEV], 0, 100), pos;
+    uint32_t ti = trk_index(t), seed = (uint32_t)t->p[P_PSEED] & 127u, ev = (uint32_t)clamp(t->p[P_PEV], 1, 8), pos;
     step_t st;
     if (!prog_s[ti] || prog_sd[ti] != seed) {
         prog_sd[ti] = (uint8_t)seed;
@@ -1166,26 +1206,23 @@ static __attribute__((noinline)) void prog_step(track_t *t, uint32_t idx, uint32
     if (!prog_len[ti] || prog_c[ti] >= prog_len[ti])      /* the last chord is over: the next one */
         prog_c[ti] = 0xFFFFu;
     if (prog_c[ti] == 0xFFFFu) {
-        int32_t bars = clamp(t->p[P_PLEN], 1, 8);
-        if (prog_rand(ti) % 100u < ev / 3u)
-            bars = clamp(bars + ((prog_rand(ti) & 1u) ? 1 : -1), 1, 8);
-        prog_len[ti] = (uint16_t)(16 * bars);
+        static const uint8_t RND_BARS[5] = {1, 2, 3, 4, 6};
+        uint32_t bars = (uint32_t)clamp(t->p[P_PLEN], 0, 8);
+        if (!bars)
+            bars = RND_BARS[prog_rand(ti) % 5u];
+        prog_len[ti] = (uint16_t)(16u * bars);
         prog_c[ti] = 0;
     }
     pos = prog_c[ti]++;
     if (!pos) {                                     /* a chord starts, or a bar group of silence */
-        uint32_t r, d, mask = scale_mask(t), deg[12], n = 0, i;
-        prog_play[ti] = (uint8_t)(prog_rand(ti) % 100u < (uint32_t)t->p[P_PDEN]);
+        uint32_t d, mask = scale_mask(t), deg[12], n = 0, i;
+        prog_play[ti] = (uint8_t)(prog_rand(ti) % 100u < (uint32_t)t->p[P_PDEN] || prog_new[ti]);
+        prog_new[ti] = 0;
         if (!prog_play[ti])
             return;
-        r = prog_rand(ti) % 100u;
-        d = r < 40u ? 0u : r < 65u ? 1u : r < 85u ? 2u : 3u;     /* I most, then IV, V, vi */
-        if (d == prog_deg[ti] && prog_rand(ti) % 100u < 60u) {   /* seldom the same chord twice */
-            r = prog_rand(ti) % 100u;
-            d = r < 40u ? 0u : r < 65u ? 1u : r < 85u ? 2u : 3u;
-        }
-        if (prog_rand(ti) % 100u < ev / 2u)
-            d = 4u + (prog_rand(ti) & 1u);          /* EVOLVE: a ii or a iii */
+        d = prog_pick(ti, ev);
+        if (d == prog_deg[ti] && ev > 1u && prog_rand(ti) % 100u < 60u)   /* seldom the same chord twice */
+            d = prog_pick(ti, ev);
         prog_deg[ti] = (uint8_t)d;
         if (mask == 0xFFFu)
             mask = SCALE_MASK[1];                   /* CHR: the major scale of ROOT */
@@ -1193,10 +1230,11 @@ static __attribute__((noinline)) void prog_step(track_t *t, uint32_t idx, uint32
             if ((mask >> i) & 1u)
                 deg[n++] = i;
         {
-            int32_t root = 48 + t->p[P_ROOT] + (int32_t)deg[DEG[d] % n] + 12 * (int32_t)song.octave + t->p[P_TRANS];
+            int32_t off = d == 7u ? PROG_DEG[7] : (int32_t)deg[PROG_DEG[d] % n];
+            int32_t root = 48 + t->p[P_ROOT] + off + 12 * (int32_t)song.octave + t->p[P_TRANS];
             uint8_t out[CHORD_MAX];
             uint32_t m;
-            prog_mode = CH_DIA3;
+            prog_mode = d == 7u ? CH_MAJ : CH_DIA3;
             m = chord_build(t, (uint32_t)clamp(root, 0, 127), out);
             prog_mode = 0;
             for (i = 0; i < m && i < 4u; i++)
@@ -1274,6 +1312,7 @@ static __attribute__((noinline)) void gen_free(track_t *t, uint32_t n)
         free_pos[ti] = period;                      /* the first step on this block */
         prog_c[ti] = 0;
         prog_len[ti] = 0;
+        prog_new[ti] = 1;                           /* (the first chord sounds at once) */
     }
     free_pos[ti] += n;
     if (free_pos[ti] < period)
@@ -1600,6 +1639,7 @@ static void events_block(uint32_t n)
         seq_tick(&trk[i], seq_n);
         gen_free(&trk[i], n);                         /* (the generators' own clock: the transport stopped) */
     }
+    noise_keep(&trk[3]);                              /* (the Noise at INF is always on) */
     if (cin_flush)
         cin_record();
     if (song.playing)

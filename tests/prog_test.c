@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* The Pad's chord progression (Pelucco; seq.c prog_step): with DENS above 0 track 1 plays I, IV, V and vi of its ROOT /
- * SCALE by itself instead of its steps. Checks: DENS 0 plays the steps as ever; the chords are the diatonic triads of the
+/* The Pad's chord progression (Pelucco; seq.c prog_step): with DENS above 0 track 1 plays chords of its ROOT / SCALE by
+ * itself instead of its steps (EVOLVE chords to choose between: 4 = I IV V vi, up to 8 with ii iii vii and a bVII; BARS 0 =
+ * RND). Checks: DENS 0 plays the steps as ever; the chords are the diatonic triads of the
  * scale (major and minor), only on I IV V vi, I the most often; each is struck once and held for BARS x 16 steps; DENS
  * thins the bars; the same chord is seldom repeated. Built and run by tests/run_tests.sh. */
 #define UI_TEST_NO_MAIN 1
@@ -11,7 +12,7 @@
 #define CHK(c) do { if (!(c)) { printf("prog: FAIL line %d: %s\n", __LINE__, #c); bad++; } } while (0)
 
 static uint8_t at_step[NSTEPS], cn[NSTEPS][4];       /* per step: notes started on it (count, the notes) */
-static uint32_t g_ev, g_seed;
+static uint32_t g_ev = 4, g_seed;
 static uint32_t play(uint32_t dens, uint32_t bars, uint32_t scale, uint32_t root)
 {
     track_t *t;
@@ -81,18 +82,45 @@ int main(void)
         for (d = 0; d < 4u && s != MIN[d]; d++) ;
         CHK(d < 4u);
     }
-    {   /* EVOLVE: with it a ii or a iii now and then, a chord a bar longer or shorter; SEED: the same one the same chords */
+    {   /* EVOLVE 8: ii, iii, vii and a bVII too (the rarer the later); 1: the I only; BARS RND: lengths of 1 to 6 bars; SEED:
+         * the same one the same chords */
         static const uint32_t IIIII[2] = {1u << 2 | 1u << 5 | 1u << 9, 1u << 4 | 1u << 7 | 1u << 11};   /* C major: ii, iii */
-        uint32_t other = 0, odd = 0, k, a[40], b[40], c[40], na = 0, same = 1, diff = 0;
-        g_ev = 100; g_seed = 5;
-        play(100, 2, 1, 0);
-        for (i = 0; i < NSTEPS; i++) {
-            if (!at_step[i]) continue;
-            if (pcset(i) == IIIII[0] || pcset(i) == IIIII[1]) other++;
-            if (i % 32u) odd++;                          /* (a chord not on a 2-bar edge: a length that changed) */
-            if (na < 40u) a[na++] = pcset(i);
+        static const uint32_t VII = 1u << 11 | 1u << 2 | 1u << 5, BVII = 1u << 10 | 1u << 2 | 1u << 5;
+        uint32_t other = 0, nvii = 0, nbvii = 0, nI = 0, tot = 0, k, a[40], b[40], c[40], na = 0, same = 1, diff = 0, sd;
+        g_ev = 8;
+        for (sd = 1; sd <= 6u; sd++) {
+            g_seed = sd;
+            play(100, 1, 1, 0);
+            for (i = 0; i < NSTEPS; i++) {
+                if (!at_step[i]) continue;
+                tot++;
+                if (pcset(i) == IIIII[0] || pcset(i) == IIIII[1]) other++;
+                if (pcset(i) == VII) nvii++;
+                if (pcset(i) == BVII) nbvii++;
+                if (pcset(i) == MAJ[0]) nI++;
+            }
         }
-        CHK(other > 5u && odd > 5u);
+        CHK(other > 20u && nvii > 0u && nbvii > 0u && nI > other);   /* all eight heard, I the most */
+        CHK(other + nvii + nbvii + nI < tot + 1u && tot > 600u);
+        printf("prog: EVOLVE 8: of %u chords I %u, ii/iii %u, vii %u, bVII %u\n", tot, nI, other, nvii, nbvii);
+        g_ev = 1; g_seed = 5;
+        play(100, 1, 1, 0);
+        for (i = 0; i < NSTEPS; i++) if (at_step[i]) CHK(pcset(i) == MAJ[0]);   /* one chord to choose from: the I */
+        g_ev = 4; g_seed = 5;                            /* BARS RND: the lengths vary */
+        {
+            uint32_t len[8] = {0}, prev2 = 0xFFFFu, kinds = 0, bars;
+            play(100, 0, 1, 0);
+            for (i = 0; i < NSTEPS; i++) {
+                if (!at_step[i]) continue;
+                if (prev2 != 0xFFFFu) { bars = (i - prev2) / 16u; CHK(i % 16u == 0 && bars >= 1u && bars <= 6u); if (bars < 8u) len[bars]++; }
+                prev2 = i;
+            }
+            for (k = 0; k < 8u; k++) kinds += len[k] > 0u;
+            CHK(kinds >= 3u);
+        }
+        g_ev = 8; g_seed = 5;
+        play(100, 2, 1, 0);
+        for (i = 0; i < NSTEPS; i++) if (at_step[i] && na < 40u) a[na++] = pcset(i);
         play(100, 2, 1, 0);                              /* the same SEED again: the same progression */
         for (i = 0, k = 0; i < NSTEPS && k < 40u; i++) if (at_step[i]) b[k++] = pcset(i);
         for (i = 0; i < k && i < na; i++) same &= a[i] == b[i];
@@ -102,8 +130,7 @@ int main(void)
         for (i = 0, k = 0; i < NSTEPS && k < 40u; i++) if (at_step[i]) c[k++] = pcset(i);
         for (i = 0; i < k && i < na; i++) diff |= a[i] != c[i];
         CHK(diff);                                       /* another SEED: another progression */
-        printf("prog: EVOLVE 100: ii/iii %u, off the bar grid %u\n", other, odd);
-        g_ev = 0; g_seed = 0;
+        g_ev = 4; g_seed = 0;
     }
     {   /* the own clock: the transport stopped, DENS above 0 and the blocks go by: chords come, a stop (DENS 0) lets go */
         track_t *t;
@@ -111,7 +138,7 @@ int main(void)
         ui_power_on();
         t = &trk[0];
         t->engine = t->eng_req = 0;
-        t->p[P_VOICE] = V_POLY; t->p[P_PDEN] = 100; t->p[P_PLEN] = 1; t->p[P_PEV] = 0;
+        t->p[P_VOICE] = V_POLY; t->p[P_PDEN] = 100; t->p[P_PLEN] = 1; t->p[P_PEV] = 4;
         song.g[G_CLOCK] = 0; song.g[G_BPM] = 120;
         song.playing = 0;
         v0 = vage;
