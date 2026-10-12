@@ -1424,7 +1424,7 @@ static void ambient_random(void)
 }
 
 /* SEQ > AMBIENT, OCT-: the panic button. The Pad's and Echoes' DENS to 0 (no new notes; what rings fades), the Noise's REL
- * to its middle (64, as at power-on) and its note let go. The transport, the Lead and the rest are not touched */
+ * to its middle (64, as at power-on), its voices let go: everything off. The transport, the Lead and the rest are not touched */
 static void ambient_stop(void)
 {
     track_t *t = &trk[3];
@@ -1434,6 +1434,7 @@ static void ambient_stop(void)
     if (FELUCCA_AMBI && eng_idx(t->eng_req) == ENGI_AMBI)
         t->p[P_REL] = 64;
     seq_release(t);
+    panic_req |= (uint8_t)(1u << 3);                    /* the Noise: every voice let go now, and noise_keep no longer strikes it */
     ui_message("AMBIENT STOP");
     ui.force = 1;
 }
