@@ -1263,6 +1263,10 @@ static void apply_preset_to(track_t *t, uint32_t pi)
         for (i = 0; i < 4u; i++)
             t->p[P_DIST + i] = (int16_t)(pr->fx[i] ? pr->fx[i] - 1 : FX_DEF[i]);
     }
+    if (FELUCCA_BELL && t->eng_req % NENGINES == ENGI_BELL) {   /* Echoes' sounds: reverb 100 %, delay 50 % */
+        t->p[P_REV] = 127;
+        t->p[P_DLY] = 64;
+    }
     fm6_track_loaded(t);                              /* FM6: the preset's patch (its SLOT) */
     load_end(t);
 }
@@ -1417,6 +1421,9 @@ static void ambient_random(void)
         garden[ti] = 0;                                         /* Echoes' garden starts again from the scale */
         gen_restart(ti);
     }
+    song.g[G_RTYPE] = 3;                                        /* the reverb: AMBI, SIZE 100, DAMP 0 */
+    song.g[G_RSIZE] = 127;
+    song.g[G_RDAMP] = 0;
     trk[1].p[P_ROOT] = (int16_t)root;                           /* the Lead: only ROOT and SCALE, to play along on the same scale */
     trk[1].p[P_SCALE] = (int16_t)scale;
     ui_message("AMBIENT MACHINE");

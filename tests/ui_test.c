@@ -191,6 +191,7 @@ static void ui_power_on(void)
     for (i = 0; i < G_COUNT; i++)
         song.g[i] = GP[i].def;
     song.g[G_BPM] = 120;                          /* (the tests count in 120 BPM; power-on is 30) */
+    song.g[G_RTYPE] = 2; song.g[G_RSIZE] = 90; song.g[G_RDAMP] = 60;   /* (the HALL they were made with; the real power-on is AMBI 127 / 0: tested apart) */
     undo_depth++;
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
@@ -3223,6 +3224,19 @@ static int test_layer(void)
     project_load(2);
     bad += check("REVERB page: TYPE HALL (power-on) / ROOM / SPRING on KNOB 1 (SIZE, DAMP beside it); a project keeps SPRING",
                  ok && song.g[G_RTYPE] == 1);
+    {   /* Pelucco: a fresh start has the AMBI reverb at SIZE 100, DAMP 0; Echoes' sounds load with REV 100 %, DLY 50 % */
+        uint32_t k;
+        ok = GP[G_RTYPE].def == 3 && GP[G_RSIZE].def == 127 && GP[G_RDAMP].def == 0;
+        if (FELUCCA_BELL) {
+            ui_power_on();
+            set_engine_of(&trk[2], ENGI_BELL);
+            for (k = 0; k < ENGINES[ENGI_BELL]->npresets; k++) {
+                apply_preset_to(&trk[2], k);
+                ok &= trk[2].p[P_REV] == 127 && trk[2].p[P_DLY] == 64;
+            }
+        }
+        bad += check("  fresh start: reverb AMBI SIZE 100 DAMP 0; every Echoes sound REV 100 %, DLY 50 %", ok);
+    }
     go_title("CHORUS");
     bad += check("  CHORUS page: CRT CDP", cur_page()->fam == FAM_FX && cur_page()->id[0] == G_CRATE &&
                  cur_page()->id[1] == G_CDEPTH && cur_page()->id[2] == 0xFFu);
