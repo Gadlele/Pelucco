@@ -363,6 +363,41 @@ static void cv_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)
         }
 }
 
+/* FANTASMA: a stylised ghost, a dome, a straight body and three teeth for the hem, drawn as an outline: shape(inset) is the
+ * whole figure shrunk by inset pixels (a negative one grows it). cx the middle, top the dome's top, w and h its size.
+ * cv_ghost: the glow (GLOW, 3 px out), the trail (TRAIL, the same outline set back to the left and down), the outline
+ * (LINE, 2 px) with FILL inside it, and the eyes (EYE): two bars, no mouth. Colours of 0 are left out */
+static void cv_ghost_shape(int32_t cx, int32_t top, int32_t w, int32_t h, int32_t inset, uint16_t c)
+{
+    int32_t r = w / 2, th = h / 6, yb = top + h - th, tw = w / 3, i, j;
+    if (r - inset > 0)
+        cv_disc(cx, top + r, r - inset, c);
+    cv_rect(cx - r + inset, top + r, w - 2 * inset, yb - top - r, c);
+    for (i = 0; i < 3; i++) {
+        int32_t tc = cx - r + tw * i + tw / 2;
+        for (j = 0; j < th - inset; j++) {
+            int32_t hw = tw * (th - j) / (2 * th) - inset;
+            if (hw > 0)
+                cv_rect(tc - hw, yb + j, 2 * hw, 1, c);
+        }
+    }
+}
+static void cv_ghost(int32_t cx, int32_t top, int32_t w, int32_t h, uint16_t line, uint16_t fill, uint16_t glow,
+                     uint16_t trail, uint16_t eye)
+{
+    int32_t t = w >= 60 ? 2 : 1;
+    if (glow)
+        cv_ghost_shape(cx, top, w, h, -3, glow);
+    if (trail) {
+        cv_ghost_shape(cx - w / 7, top + h / 24, w, h, 0, trail);
+        cv_ghost_shape(cx - w / 7, top + h / 24, w, h, t, fill);
+    }
+    cv_ghost_shape(cx, top, w, h, 0, line);
+    cv_ghost_shape(cx, top, w, h, t, fill);
+    cv_rect(cx - w / 4 - w / 18, top + h * 2 / 5, w / 9 + 1, h / 6, eye);
+    cv_rect(cx + w / 4 - w / 18, top + h * 2 / 5, w / 9 + 1, h / 6, eye);
+}
+
 /* ------------------------------------------------- 4-bit alpha blit --- */
 /* coverage curves: a little heavier for light ink on dark, lighter for dark ink on light */
 static const uint8_t CURVE_DARK[16] = {0, 24, 43, 62, 80, 97, 114, 130, 147, 163, 178, 194, 210, 225, 240, 255};

@@ -1,3 +1,12 @@
+# FANTASMA (Pelucco with a ghostly look)
+
+**FANTASMA** is [Pelucco](https://github.com/Gadlele/Pelucco) with another face and nothing else changed: the sound, the
+sequencer and the ambient machine are Pelucco's. What is new, all of it to look at: **ECTO**, a neon palette (near-black with a
+blue cast, ice-white text, cyan values, magenta for the one active thing), which a fresh setting starts with (the others
+are still in MENU > COLOR); a **splash** with a neon ghost behind the name FANTASMA and "By Gadlele" bottom right; the
+one **ghost** on the AMBIENT page (eyes only, no mouth); the name in the About page and on the Android app. Pelucco is
+the same tree without those: the branch `claude/pelucco-all`. This branch is `fantasma`.
+
 # Felucca
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)

@@ -735,7 +735,7 @@ static void sg_fresh(void)
  * OP LEVEL pages and the algorithm charts, exist only there: fm4_screen) */
 #define E_FM (FELUCCA_FM4 ? ENGI_DIGITAL : ENGI_FM6)
 
-enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESETS, S_PRESETS_NOFAV, S_USER, S_PHRASES, S_PROJECT, S_TOOLS,
+enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESETS, S_PRESETS_NOFAV, S_USER, S_PHRASES, S_PROJECT, S_TOOLS, S_AMBIENT,
        S_SONG_EMPTY, S_SONG, S_STEP, S_AUTO_STEPS, S_AUTO_ADD_CHANCE, S_MOTION, S_DRUM, S_DRUM_HAND, S_DRUM_CYM, S_MIXER,
        S_MIXER_HOME, S_MIXER_PAN,
        S_ENV, S_ENVDEST, S_LFO, S_MOD, S_FX, S_SLICER, S_DLY, S_SCL, S_CHORD, S_CHORD_WIDE, S_CHORD_OFF, S_CHORD_KIT, S_ARP, S_VOICE, S_CLOCK, S_MENU_MIDI,
@@ -765,7 +765,7 @@ enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESET
        S_DLY_DOT, S_DLY_DOT16, S_FX_THROW,
        S_DETAIL, S_DETAIL_PLAYING, S_DETAIL_REST, S_DETAIL_DRUM, S_ROLL_MARKS, S_DRUM_MARKS, S_HELP_DETAIL, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "message_key", "message_nofile", "presets", "presets_nofav", "user",
-    "phrases", "project", "tools", "song_empty", "song", "step", "auto_steps", "auto_add_chance", "automation", "drum",
+    "phrases", "project", "tools", "ambient", "song_empty", "song", "step", "auto_steps", "auto_add_chance", "automation", "drum",
     "drum_hand", "drum_cym", "mixer", "mixer_from_home", "mixer_pan", "env", "env_dest", "lfo", "mod", "fx", "slicer", "dly", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
     "voice", "clock", "menu_midi", "edit_analog", FELUCCA_FM4 ? "edit_digital" : "edit_fm6", "op_env", "edit_wheel", "edit_sample",
     "edit_grain", "edit_phys", "alg_1", "alg_2", "alg_3", "alg_4", "alg_5", "alg_6", "alg_7", "alg_8", "op_level", "fm6_alg_01", "fm6_alg_05", "fm6_alg_22", "fm6_alg_32", "fm6_op", "fm6_op_fixed", "fm6_op2", "fm6_op_env", "fm6_op_env_rel", "confirm_seq", "confirm_project", "confirm_user", "confirm_pattern",
@@ -980,6 +980,7 @@ static void setup(int s)
     case S_PHRASES: go_page(GR_PATS); break;
     case S_PROJECT: song.playing = 0; project_save(1); song.g[G_SLOT] = 2; go_page(GR_SLOTS); ui.act = 4; break;
     case S_TOOLS: go_page(GR_TOOLS); ui.act = 1; break;
+    case S_AMBIENT: go_page(GR_AMBI); break;                  /* (FANTASMA: the one ghost) */
     case S_SONG_EMPTY: song.playing = 0; go_page(GR_SONG); break;
     case S_SONG:
         song.playing = 0; project_save(0); project_save(1);
@@ -1564,23 +1565,23 @@ static void draw(int s)
         setup_show("TURN RIGHT", "ALGORITHM");
         return;
     }
-    if (s == S_SPLASH) {                          /* the power-on splash (main.c, before the UI): its two lines (Pelucco) */
-        static const char WANT[] = "PELUCCO|by Gadlele";
+    if (s == S_SPLASH) {                          /* the power-on splash (main.c, before the UI): its two lines (FANTASMA) */
+        static const char WANT[] = "FANTASMA|By Gadlele";
         splash_seen[0] = 0;
         in_splash = 1;
         draw_splash();
         in_splash = 0;
-        {   /* the clouds: RAISE pixels (the near clouds) above and below the name (in palettes where TEXT is RAISE too the name
+        {   /* the ghost: THEME pixels (its outline) above and below the name (in palettes where TEXT is THEME too the name
              * adds to them: only a floor) */
             uint32_t x, y, up = 0, down = 0, mid = 0; (void)mid;
-            uint16_t ra = host_screen[60u * 240u + 64u];
+            uint16_t ra = host_screen[31u * 240u + 120u];      /* (the top of the dome) */
             for (y = 0; y < 240u; y++)
                 for (x = 0; x < 240u; x++)
                     if (host_screen[y * 240u + x] == ra) {
                         if (y < 96u) up++; else if (y < 150u) mid++; else down++;
                     }
-            if (up < 200u || down < 200u) {
-                if (rep) fprintf(rep, "FIND %-26s the splash clouds missing or behind the name (above %u, below %u)\n",
+            if (up < 100u || down < 30u) {
+                if (rep) fprintf(rep, "FIND %-26s the splash ghost missing or behind the name (above %u, below %u)\n",
                                  cur_name, up, down);
                 nfind++;
             }
@@ -1590,7 +1591,7 @@ static void draw(int s)
             nfind++;
         } else {
             static uint8_t said;
-            if (!said++) printf("ui_render: the splash shows PELUCCO among clouds\n");
+            if (!said++) printf("ui_render: the splash shows FANTASMA over a ghost\n");
         }
         return;
     }
@@ -2068,7 +2069,7 @@ int main(int argc, char **argv)
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
     char path[600];
     uint32_t p, s;
-    static const char *const SHOW[] = {"GREY", "MONO", "GREEN", "PAPER", "NIGHT", "DUSK", "MIST", "SAKURA"};   /* (NIGHT: #50, to review) */
+    static const char *const SHOW[] = {"GREY", "MONO", "GREEN", "PAPER", "NIGHT", "DUSK", "MIST", "SAKURA", "ECTO"};   /* (NIGHT: #50, to review) */
     snprintf(path, sizeof path, "%s/report.txt", out);
     rep = fopen(path, "w");
     if (!rep) { fprintf(stderr, "cannot write %s\n", path); return 1; }

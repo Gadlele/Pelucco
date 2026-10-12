@@ -1585,11 +1585,12 @@ static int test_display_preferences(void)
                  settings.palette == 6 && T_BG == UI_PALETTES[6].bg && ux.light && ui.menu == 1 && !song.octave &&
                  memcmp(before, host_screen, sizeof before) && !memcmp(sounds, trk, sizeof sounds));
     turn(EN_K1, 1);
-    bad += check("COLOR KNOB 1 steps on to HI-CON, NIGHT (#50: true black), MONO (1.0.2: black and white), then on to DUSK (Pelucco)",
+    bad += check("COLOR KNOB 1 steps on to HI-CON, NIGHT (#50: true black), MONO (1.0.2: black and white), then on to DUSK (Pelucco's default; FANTASMA's is ECTO, the last)",
                  settings.palette == 7 && (turn(EN_K1, 1), settings.palette == 8u) && T_BG == 0u &&
                  str_eq(UI_PALETTES[8].name, "NIGHT") && (turn(EN_K1, 1), settings.palette == UI_BW_INDEX) &&
                  str_eq(UI_PALETTES[UI_BW_INDEX].name, "MONO") && T_BG == 0u && T_TEXT == 0xFFFFu &&
-                 (turn(EN_K1, 1), settings.palette == UI_DEFAULT_INDEX) && str_eq(UI_PALETTES[UI_DEFAULT_INDEX].name, "DUSK"));
+                 (turn(EN_K1, 1), settings.palette == UI_BW_INDEX + 1u) && str_eq(UI_PALETTES[UI_BW_INDEX + 1u].name, "DUSK") &&
+                 str_eq(UI_PALETTES[UI_DEFAULT_INDEX].name, "ECTO"));
     settings.lowcut = 2;
     ui.menu_sel = MI_LOWCUT;
     press(B_OCTUP);
@@ -1612,7 +1613,7 @@ static int test_display_preferences(void)
     k = ui.menu == 1 && settings.lowcut == 0u;         /* (OCT- at the first value: nothing, the menu stays) */
     press(B_HOME);
     bad += check("HOME leaves display preferences without changing musical state (OCT- no longer closes)",
-                 k && !ui.menu && settings.palette == UI_DEFAULT_INDEX && !memcmp(sounds, trk, sizeof sounds));
+                 k && !ui.menu && settings.palette == UI_BW_INDEX + 1u && !memcmp(sounds, trk, sizeof sounds));
     return bad;
 }
 

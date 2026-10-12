@@ -1241,38 +1241,22 @@ static void draw_columns(void)
 }
 
 
-/* The power-on splash (main.c fm1_main, web/emu felucca_web.c; Pelucco's own): the name PELUCCO in the middle of the
- * screen among stylised clouds, flat shapes in two tones (RAISE for the near ones, LINE for the far), above and
- * below it, none behind the text; under it, small, "by Gadlele". Drawn in three bands of the
- * canvas, 80 rows each (the clouds are drawn in every band they reach, clipped to it). In the saved palette
- * (settings_init before it) */
+/* The power-on splash (main.c fm1_main, web/emu felucca_web.c; FANTASMA's own): a neon ghost (the outline, a magenta trail,
+ * a glow, two eyes and no mouth) with the name FANTASMA over it in the middle of the screen; small, bottom right, "By
+ * Gadlele". Drawn in three bands of the canvas, 80 rows each (the ghost is drawn in every band it reaches, clipped to
+ * it). In the saved palette (settings_init before it) */
 #define SPL_BAND 80
 #define SPL_NAME_Y 100                              /* the name's line (AF_L, 35 px) */
-static const char SPLASH_NAME[] = "PELUCCO", SPLASH_SUB[] = "by Gadlele";
-/* a cloud: a flat base (two end discs and the strip between) with two bumps. u is its unit (the base's half height);
- * cx, cy the middle of the base's line, in screen coordinates; oy the band's top */
-static void splash_cloud(int32_t cx, int32_t cy, int32_t u, int32_t oy, uint16_t c)
-{
-    cy -= oy;
-    cv_rect(cx - 3 * u, cy - u, 6 * u, 2 * u, c);
-    cv_disc(cx - 3 * u, cy, u, c);
-    cv_disc(cx + 3 * u, cy, u, c);
-    cv_disc(cx - u * 7 / 5, cy - u * 3 / 4, u * 3 / 2, c);
-    cv_disc(cx + u * 5 / 4, cy - u, u * 15 / 8, c);
-}
+static const char SPLASH_NAME[] = "FANTASMA", SPLASH_SUB[] = "By Gadlele";
 static void splash_band(uint32_t y)
 {
     int32_t oy = (int32_t)y;
     cv_begin(240, SPL_BAND, T_BG);
-    splash_cloud(186, 36, 5, oy, T_LINE);               /* the far ones first */
-    splash_cloud(132, 70, 4, oy, T_LINE);
-    splash_cloud(52, 208, 6, oy, T_LINE);
-    splash_cloud(64, 60, 9, oy, T_RAISE);               /* the near ones */
-    splash_cloud(174, 190, 10, oy, T_RAISE);
-    if (SPL_NAME_Y >= oy && SPL_NAME_Y < oy + SPL_BAND) {   /* the name, and the line under it */
+    cv_ghost(120, 30 - oy, 104, 132, T_THEME, T_BG, T_TINT, T_ACCENT, T_TEXT);
+    if (SPL_NAME_Y >= oy && SPL_NAME_Y < oy + SPL_BAND)     /* the name */
         cv_text(HALF_UP(240 - text_w(&AF_L, SPLASH_NAME)), SPL_NAME_Y - oy, &AF_L, SPLASH_NAME, T_TEXT);
-        cv_text(HALF_UP(240 - text_w(&AF_S, SPLASH_SUB)), SPL_NAME_Y + 44 - oy, &AF_S, SPLASH_SUB, T_MID);
-    }
+    if (218 >= oy && 218 < oy + SPL_BAND)
+        cv_text(232 - text_w(&AF_S, SPLASH_SUB), 218 - oy, &AF_S, SPLASH_SUB, T_MID);
     cv_blit(0, y);
 }
 static void draw_splash(void)
