@@ -50,7 +50,15 @@ int main(void)
     CHK(noise_inf(t) == 0);
     apply_preset_to(t, 2);                                /* (not INF: a preset's own REL as ever) */
     CHK(t->p[P_REL] == 64);
+    ambient_random();                                     /* the machine on, then OCT- STOP: everything off */
+    CHK(run(6) > 300.0 && trk[0].p[P_PDEN] > 0 && noise_inf(&trk[3]));
+    ambient_stop();
+    CHK(trk[0].p[P_PDEN] == 0 && trk[2].p[P_E4] == 0 && !noise_inf(&trk[3]));
+    run(30);
+    CHK(!voices(&trk[3]));                                /* (the Noise stays off, the Pad and bells rang out) */
+    CHK(!voices(&trk[0]) && !voices(&trk[2]));
+    CHK(run(3) < 5.0);
     if (bad) { printf("noise_on: %d FAILED\n", bad); return 1; }
-    printf("noise_on: always on at INF, through new sounds, back after a cut, off below INF passed.\n");
+    printf("noise_on: always on at INF, through new sounds, back after a cut, off below INF, and the machine's STOP passed.\n");
     return 0;
 }
