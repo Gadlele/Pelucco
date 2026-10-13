@@ -1922,7 +1922,7 @@ static int32_t mote_rnd(int32_t n)                     /* 0..n-1 */
 }
 static void graph_motes(uint16_t acc)
 {
-    int32_t w = PANEL_W, h = (int32_t)cv_h, i, pk = 0, lv, zc = 0, pt, kick;
+    int32_t w = PANEL_W, h = (int32_t)cv_h, i, pk = 0, lv, zc = 0, pt, kick, na;
     static int32_t lvl;
     uint16_t hi;
     for (i = 0; i < 64; i++) {                       /* the sound's level: the scope's peak (instant attack, slow release) */
@@ -1938,7 +1938,8 @@ static void graph_motes(uint16_t acc)
     lvl = lv > lvl ? lv : lvl - ((lvl - lv) >> 4) - 1;
     lvl = lvl < 0 ? 0 : lvl;
     lv = lvl;
-    hi = ux_mix(acc, T_ACCENT, (uint32_t)pt * 100u >> 8);   /* low notes in the track's colour, high ones towards the accent */
+    hi = T_TEXT;                                     /* white (the palette's text colour) */
+    na = 40 + (lv * 110 >> 8);                       /* silence: few of them; the sound brings the rest */
     if (!mote_on) {
         mote_on = 1;
         for (i = 0; i < MOTE_N; i++) {
@@ -1949,10 +1950,10 @@ static void graph_motes(uint16_t acc)
         }
     }
     for (i = 0; i < MOTE_N; i++) {
-        int32_t x, y, d = mote[i].d, br, sp = 3 + d * 3;
+        int32_t x, y, d = mote[i].d, br, k, sp = 1 + d + (lv * (2 + d * 2) >> 8);
         uint32_t ph = (uint32_t)(mote[i].ph += (uint8_t)(1 + d)) << 24;
-        mote[i].vx = (int16_t)((mote[i].vx * 7 >> 3) + sp + (osc_sine(ph) * 6 >> 15) + mote_rnd(9) - 4);
-        mote[i].vy = (int16_t)((mote[i].vy * 7 >> 3) + (osc_sine(ph + 0x40000000u) * 5 >> 15) + mote_rnd(9) - 4);
+        mote[i].vx = (int16_t)((mote[i].vx * 7 >> 3) + sp + (osc_sine(ph) * 2 >> 15) + mote_rnd(5) - 2);
+        mote[i].vy = (int16_t)((mote[i].vy * 7 >> 3) + (osc_sine(ph + 0x40000000u) * 2 >> 15) + mote_rnd(5) - 2);
         mote[i].vx = (int16_t)(mote[i].vx + ((mote_rnd(33) - 16) * lv >> 6) + (sp * pt * lv >> 14));   /* the sound stirs them */
         mote[i].vy = (int16_t)(mote[i].vy + ((mote_rnd(33) - 16) * lv >> 6) - (lv >> 4) - (pt * lv >> 12));
         if (kick) {                                  /* the attack throws them away from the centre */
@@ -1969,11 +1970,18 @@ static void graph_motes(uint16_t acc)
             mote[i].y = (int16_t)(mote[i].y + ((h - 6) << 6));
         if (mote[i].y >= (h - 3) << 6)
             mote[i].y = (int16_t)(mote[i].y - ((h - 6) << 6));
+        if (i >= na)
+            continue;                                /* (resting: it still drifts, unseen) */
         x = PANEL_X0 + (mote[i].x >> 6);
         y = mote[i].y >> 6;
         br = 22 + d * 22 + (lv * (50 + d * 25) >> 8);
         if (br > 100)
             br = 100;
+        for (k = 1; k <= 4; k++) {                   /* the trail: behind it, as long as it is fast, fading */
+            int32_t tx = x - (mote[i].vx * k * 3 >> 6), ty = y - (mote[i].vy * k * 3 >> 6);
+            if (tx != x || ty != y)
+                cv_pset(tx, ty, ux_mix(T_SURF, hi, br * (5 - k) / 10));
+        }
         if (d == 2 || (d == 1 && lv > 128))          /* loud: the middle ones swell too */
             cv_rect(x, y, 2, 2, ux_mix(T_SURF, hi, br));
         else
