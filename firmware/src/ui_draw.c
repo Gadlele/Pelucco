@@ -729,20 +729,17 @@ static void sound_name(const track_t *t, char *b)
 
 /* ------------------------------------------------------------------ the page tabs (FANTASMA) ---
  * A strip between the header and the cards: a tab for each page of the button's family, as the footer's "NAME i/n"
- * counted them. The open page is a tab in the button's colour (one fixed colour per button) reading "BUTTON · PAGE"
+ * counted them. The open page is a tab in the button's colour (one colour for all (the UI's)) reading "BUTTON · PAGE"
  * (just the page when its name starts with the button's); the others are dark, short. The colour's 2 px line runs
  * under the tabs and the open tab ends exactly on it. */
 static const char *const TAB_BTN[FAM_COUNT] = {"HOME", "ENV", "LFO", "FX", "SCL", "EDIT", "GLO", "SAVE", "ARP", "SEQ", "HOME"};
 #define TAB_NCOL FAM_COUNT
 static uint16_t tab_colour(uint32_t fam)
 {
-    static const uint16_t C[FAM_COUNT] = {RGB(63, 240, 255), RGB(255, 180, 60), RGB(165, 115, 255), RGB(255, 125, 200),
-                                          RGB(160, 240, 70), RGB(255, 63, 208), RGB(255, 110, 110), RGB(120, 185, 255),
-                                          RGB(255, 235, 90), RGB(70, 240, 180), RGB(63, 240, 255)};
-    uint16_t c = C[fam % TAB_NCOL];
+    (void)fam;                                         /* one colour for every tab: the UI's neon, the selected track's */
     if (ux.mono)                                       /* GREY: its luma; MONO (black and white: REC is the text's): white */
-        return ux_gray(ux_luma(c) * 31u / 255u);
-    return ux.rec == ux.text ? ux.text : c;
+        return ux.theme;
+    return ux.rec == ux.text ? ux.text : ux.theme;
 }
 /* a page's name for its tab, without the position (EDIT: the engine's: "OSC") */
 static int starts(const char *s, const char *p)
@@ -1060,7 +1057,7 @@ static void draw_foot(void)
             tx = r - text_w(&AF_S, ti) - (pi != ICON_NONE ? 16 : 0);   /* would be cut (MENU > LARGE) */
         }
         x = 8 + 16 + 5;                                  /* FANTASMA: the track's number where the engine's icon was */
-        cv_icon_mid(8, FS_MID, 16, trk_icon(song.sel, 1), T_ACCENT, T_BG);
+        cv_icon_mid(8, FS_MID, 16, trk_icon(song.sel, 1), T_THEME, T_BG);
         {   /* the project slot's letter ("B", "B*" edited since) after it */
             char sl[3], l[2];
             if (head_slot(sl)) {
