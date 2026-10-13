@@ -1938,7 +1938,7 @@ static void graph_motes(uint16_t acc)
     lvl = lv > lvl ? lv : lvl - ((lvl - lv) >> 4) - 1;
     lvl = lvl < 0 ? 0 : lvl;
     lv = lvl;
-    hi = T_TEXT;                                     /* white (the palette's text colour) */
+    hi = ux_mix(acc, T_ACCENT, (uint32_t)pt * 100u >> 8);   /* the track's colour, high notes towards the accent */
     na = 40 + (lv * 110 >> 8);                       /* silence: few of them; the sound brings the rest */
     if (!mote_on) {
         mote_on = 1;
