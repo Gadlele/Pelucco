@@ -5,7 +5,7 @@ name: Emulator (web)
 on:
   workflow_dispatch:
   push:
-    branches: [fantasma, claude/pelucco-all]
+    branches: [fantasma, fantasma-tabs, claude/pelucco-all]
     paths: ['web/emu/**', 'firmware/**', 'tools/**', '.github/workflows/emulator.yml']
 permissions:
   contents: write
