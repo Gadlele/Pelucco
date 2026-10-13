@@ -8933,11 +8933,21 @@ static int test_song_pictures(void)
 
 /* the header's slot letter (ui_draw.c head_slot): the PROJECT slot of the selected track's pattern; "A*" edited since;
  * none at power-on and after a PHRASES pattern; a song playing: its section's slot ("-" silent); a message hides it */
-static uint32_t head_ink_cols(int32_t x0, int32_t x1)  /* header columns x0..x1 with anything not BG */
+static uint32_t head_hdr_cols(int32_t x0, int32_t x1)  /* header columns x0..x1 with anything not BG (a message shows the header) */
 {
     uint32_t n = 0;
     for (int32_t x = x0; x <= x1; x++)
         for (int32_t y = 2; y < 22; y++)
+            if (swap16(host_screen[(uint32_t)y * 240u + (uint32_t)x]) != T_BG) { n++; break; }
+    return n;
+}
+static uint32_t head_ink_cols(int32_t x0, int32_t x1)  /* FANTASMA: the slot letter is in the footer, after the track's number:
+                                                        * footer columns x0..x1 (rows 220..232) with anything not BG */
+{
+    uint32_t n = 0;
+    (void)x0; (void)x1;
+    for (int32_t x = 26; x <= 28; x++)
+        for (int32_t y = 220; y < 233; y++)
             if (swap16(host_screen[(uint32_t)y * 240u + (uint32_t)x]) != T_BG) { n++; break; }
     return n;
 }
@@ -8954,7 +8964,7 @@ static int test_head_slot(void)
     frames(50);
     ok = head_is(0) && !head_ink_cols(23, 32);
     project_save(1); ui.msg_t = 0; frames(50);
-    ok &= head_is("B") && head_ink_cols(23, 32) > 4;
+    ok &= head_is("B") && head_ink_cols(23, 32) > 0;
     bad += check("header: no letter at power-on; \"1 B\" after PROJECT SAVE to B", ok);
     trk[0].step[0].note[0] = 70; trk[0].step[0].n = 1; frames(50);
     ok = head_is("B*");
@@ -8985,7 +8995,7 @@ static int test_head_slot(void)
     song.sel = 1; ok &= head_is("-");
     song.sel = 0;
     ui_message("SAVED"); frames(20);
-    ok &= !head_ink_cols(23, 32);
+    ok &= !head_hdr_cols(23, 32);
     seq_stop(); ui.msg_t = 0; frames(50);
     bad += check("header: a song playing: its section's slot (\"1 B\", T2 \"-\"); a message hides it; STOP: \"A\"", ok &&
                  head_is("A"));

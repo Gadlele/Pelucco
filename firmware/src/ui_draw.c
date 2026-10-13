@@ -395,6 +395,7 @@ static void draw_head(void)
     if (!(msg && centre))
         draw_battery(HEAD_BAT_X);
     cv_blit(0, Y_HEAD);
+    ui.tab_sig = 0;                                    /* (the tabs redraw when they come back) */
 }
 /* LINE: 1 px dividers in the BG gaps between the strips, not around them: under the header, above and
  * below the panel, and between the four columns over rows y .. y + h (the cards; the mixer's strips too) */
@@ -439,8 +440,7 @@ static void draw_gaps(uint32_t y, uint32_t h)
 static void draw_frame(void)
 {
     uint32_t ch = card_h(), gy = graph_y(), gh = graph_h();   /* (MENU > LARGE: tall cards, a strip) */
-    gap_rows(H_HEAD, Y_TABS);
-    gap_rows(Y_TABS + H_TABS, Y_LABEL);
+    gap_rows(H_HEAD, Y_LABEL);
     gap_rows(Y_LABEL + ch, gy);
     gap_rows(gy + gh, Y_FOOT);
     draw_gaps(Y_LABEL, ch);
@@ -881,31 +881,73 @@ static void draw_tabs(uint32_t force)
     x = 3;
     if (lo > 0u) {
         cv_rrect(x, 4, TAB_MARK, H_TABS - 4 + 6, -5, T_RAISE, T_BG);
-        cv_text_on(x + 2, 8 - AF_T_CAP_Y, &AF_T, "<", T_MID, T_RAISE);
+        cv_text_on(x + 2, 9 - AF_T_CAP_Y, &AF_T, "<", T_MID, T_RAISE);
         x += TAB_MARK + 2;
     }
     for (i = lo; i <= hi; i++) {                           /* the dark tabs first, then the line, then the open tab */
         if (i != open) {
             cv_rrect(x, 4, w[i], H_TABS - 4 + 6, -5, T_RAISE, T_BG);
-            cv_text_on(x + (int32_t)pad, 8 - AF_T_CAP_Y, &AF_T, nm[i], T_MID, T_RAISE);
+            cv_text_on(x + (int32_t)pad, 9 - AF_T_CAP_Y, &AF_T, nm[i], T_MID, T_RAISE);
         }
         x += w[i] + 2;
     }
     if (hi + 1u < n) {
         cv_rrect(x, 4, TAB_MARK, H_TABS - 4 + 6, -5, T_RAISE, T_BG);
-        cv_text_on(x + 2, 8 - AF_T_CAP_Y, &AF_T, ">", T_MID, T_RAISE);
+        cv_text_on(x + 2, 9 - AF_T_CAP_Y, &AF_T, ">", T_MID, T_RAISE);
     }
     cv_rect(0, H_TABS - 2, 240, 2, col);
     x = 3 + (lo > 0u ? TAB_MARK + 2 : 0);
     for (i = lo; i < open; i++)
         x += w[i] + 2;
     cv_rrect(x, 0, w[open], H_TABS + 6, -5, col, T_BG);
-    cv_text_on(x + (int32_t)pad, 7 - AF_T_CAP_Y, &AF_T, big, T_INK, col);
+    cv_text_on(x + (int32_t)pad, 8 - AF_T_CAP_Y, &AF_T, big, T_INK, col);
     cv_blit(0, Y_TABS);
+    ui.head_sig = 0;                                       /* (the header redraws when it comes back) */
+}
+/* FANTASMA: what the header showed, small, at the right of the footer's second row: [OCT / song row] [REC] [play state]
+ * the BPM, the battery. Returns the x where it starts (the sound's name ends before it); the middle line is row 25 */
+#define FS_MID 26
+static int32_t foot_status(uint32_t draw)
+{
+    char b[12];
+    int32_t x = 232, w;
+    uint32_t id = song.playing ? (chain.running ? ICON_X_SONG : ICON_X_PLAY) : seq_counting() ? ICON_X_PLAY : ICON_X_STOP;
+    int32_t lvl = batt_shown();
+    x -= 24;                                           /* the battery (24 px) */
+    if (draw)
+        cv_icon_mid(x, FS_MID, 24, batt_icon(lvl), lvl == 1 ? T_ACCENT : lvl == 0 ? T_MID : T_THEME, T_BG);
+    fmt_int(b, song.g[G_BPM]);                         /* the BPM: a small number */
+    w = text_w(&AF_S, b);
+    x -= 5 + w;
+    if (draw)
+        cv_text(x, 19, &AF_S, b, T_THEME);
+    x -= 18;                                           /* the play state */
+    if (draw)
+        cv_icon_mid(x, FS_MID, 16, id, song.playing ? T_THEME : seq_counting() ? T_ACCENT : T_MID, T_BG);
+    if (song.rec) {                                    /* REC: filled, this track armed; outlined, another */
+        x -= 17;
+        if (draw)
+            cv_icon_mid(x, FS_MID, 16, (song.rec >> song.sel) & 1u ? ICON_X_REC : ICON_X_REC_O, T_REC, T_BG);
+    }
+    if (chain.running) {                               /* the song's row */
+        fmt_int(b, (int32_t)chain.row + 1);
+        x -= 8 + text_w(&AF_S, b);
+        if (draw)
+            cv_text(x, 19, &AF_S, b, T_THEME);
+    } else if (song.octave) {                          /* OCT +2 */
+        str_cpy(b, song.octave > 0 ? "+" : "", sizeof b);
+        fmt_int(b + str_len(b), song.octave);
+        x -= 8 + text_w(&AF_S, "OCT") + 3 + text_w(&AF_S, b);
+        if (draw) {
+            int32_t tx = cv_text(x, 19, &AF_S, "OCT", T_MID);
+            cv_text(tx + 3, 19, &AF_S, b, T_THEME);
+        }
+    }
+    return x;
 }
 static void draw_foot(void)
 {
-    char s[48], pn[16], ti[20], ln[24];
+    char s[48], pn[16], ti[20], ln[24], sb[3];
     const track_t *t = TSEL;
     uint32_t sig;
     const page_t *pg = cur_page();
@@ -928,7 +970,9 @@ static void draw_foot(void)
         uint32_t ph = song.playing && t->seq_idx / 16u == ui.bank ? t->seq_idx : 0xFFu;
         sig = str_hash(0x9E3779B9u, s) + ph * 97u + (song.seq_mode ? ui.cursor : 0xFFu) * 3001u + steps_hash(t) +
               (ui.home ? 0u : page_icon(pg)) * 7121u +
-              ui.bank * 7u + (uint32_t)t->p[P_SLEN] * 13u;
+              ui.bank * 7u + (uint32_t)t->p[P_SLEN] * 13u + (uint32_t)song.g[G_BPM] * 101u + (uint32_t)song.playing * 3u +
+              (uint32_t)song.rec * 17u + (uint32_t)(song.octave + 8) * 11u + (uint32_t)batt_shown() * 7777u +
+              (uint32_t)seq_counting() * 7u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + (uint32_t)head_slot(sb) * 977u + (uint32_t)sb[0] * 31u + (uint32_t)sb[1] * 7u;
     }
     if (act_cols()) {                                  /* the hint, and whether OCT+ would act */
         char ha[16], hb[16];
@@ -1004,29 +1048,41 @@ static void draw_foot(void)
     }
     {   /* row 2: engine icon + name, sound, page title at the right with its icon before it (MIXER, PHRASES, SONG,
          * AUTOMATION); icons: their ink on the names' capitals */
-        uint32_t pi = ui.home || !ti[0] ? ICON_NONE : page_icon(pg), ei = FELUCCA_ICONS ? engine_icon(ename) : ICON_NONE;
-        int32_t r = 232, tx, ex, need = text_w(&AF_S, pn), ew = text_w(&AF_S, ename);
-        ex = 8 + (FELUCCA_ICONS ? 12 + 5 : 0) + (ew < 80 ? ew : 80);   /* (where the engine's name ends) */
+        uint32_t pi = ui.home || !ti[0] ? ICON_NONE : page_icon(pg);
+        int32_t r = foot_status(0) - 8, tx, ex, need = text_w(&AF_S, pn), ew = text_w(&AF_S, ename);
+        ex = 8 + 16 + 5 + 14 + (ew < 80 ? ew : 80);   /* (where the engine's name ends) */
         tx = r - text_w(&AF_S, ti) - (pi != ICON_NONE ? 16 : 0);
         if (!ui.home && pg->graph == GR_EVENTS && tx - 12 - (ex + 10) < need) {
             str_cpy(ti + 4, ti + 10, sizeof ti - 4);    /* #93: "AUTOMATION 6/6" -> "AUTO 6/6" where the sound's name */
             tx = r - text_w(&AF_S, ti) - (pi != ICON_NONE ? 16 : 0);   /* would be cut (MENU > LARGE) */
         }
-        x = 8;
-        if (FELUCCA_ICONS) {
-            if (ei != ICON_NONE)
-                GFX_HOOK_ALIGN(0, 19 + AF_S_CAP_Y, 0, 19 + AF_S_CAP_Y + AF_S_CAP_H, AL_V,
-                               "footer icons on the names' line");
-            x += cv_icon_in(x, 19 + AF_S_CAP_Y, 0, AF_S_CAP_H, 12, ei, T_MID, T_BG) + 5;
+        x = 8 + 16 + 5;                                  /* FANTASMA: the track's number where the engine's icon was */
+        cv_icon_mid(8, FS_MID, 16, trk_icon(song.sel, 1), T_ACCENT, T_BG);
+        {   /* the project slot's letter ("B", "B*" edited since) after it */
+            char sl[3], l[2];
+            if (head_slot(sl)) {
+                l[0] = sl[0];
+                l[1] = 0;
+                x = cv_text(x - 2, 19, &AF_S, l, sl[0] == '-' ? T_MID : T_THEME);
+                if (sl[1])
+                    x = cv_text(x, 19, &AF_S, "*", T_MID);
+                x += 6;
+            }
         }
-        x = cv_text_fit(x, 19, &AF_S, ename, T_THEME, T_BG, 80);
-        cv_free_text(x + 10, 19, &AF_S, pn, T_TEXT, T_BG, tx - 12 - (x + 10));
+        if (tx - 12 - (x + (ew < 80 ? ew : 80) + 10) < 40)   /* (little room: the sound's name alone) */
+            cv_free_text(x, 19, &AF_S, pn, T_TEXT, T_BG, tx - 12 - x);
+        else {
+            x = cv_text_fit(x, 19, &AF_S, ename, T_THEME, T_BG, 80);
+            cv_free_text(x + 10, 19, &AF_S, pn, T_TEXT, T_BG, tx - 12 - (x + 10));
+        }
         if (pi != ICON_NONE) {
             GFX_HOOK_ALIGN(0, 19 + AF_S_CAP_Y, 0, 19 + AF_S_CAP_Y + AF_S_CAP_H, AL_V,
                            "footer icons on the names' line");
             cv_icon_in(tx, 19 + AF_S_CAP_Y, 0, AF_S_CAP_H, 12, pi, T_MID, T_BG);
         }
-        cv_text_r(r, 19, &AF_S, ti, T_MID, T_BG);
+        if (ti[0])
+            cv_text_r(r, 19, &AF_S, ti, T_MID, T_BG);
+        foot_status(1);
     }
     cv_blit(0, Y_FOOT);
 }
@@ -1689,7 +1745,6 @@ static void ui_draw_page(uint32_t counting)
         if (ui.force)
             draw_frame();
         draw_head();
-        draw_tabs(ui.force);
         draw_layer();
         if (ui.msg_t && !--ui.msg_t && ui.msg2[0]) {
             str_cpy(ui.msg, ui.msg2, sizeof ui.msg);
@@ -1712,8 +1767,10 @@ static void ui_draw_page(uint32_t counting)
     if (ui.force)
         draw_frame();
     felucca_dbg.stage = 3;
-    draw_head();
-    draw_tabs(ui.force);
+    if (ui.msg_t || ui.bpm_t || song.g[G_BPM] != ui.roll_bpm || ui.roll[ROLL_BPM].from[0])   /* FANTASMA: the tabs where the */
+        draw_head();                                    /* header was; a message or the BPM changing takes the strip for its moment */
+    else
+        draw_tabs(ui.force);
     felucca_dbg.stage = 4;
     draw_columns();
     felucca_dbg.stage = 5;

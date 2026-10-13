@@ -111,28 +111,26 @@ static uint8_t sync_reload;                  /* engine / preset / project / user
 #define ACC T_THEME                /* values, curves */
 #define VAL(c) ((c) == ui.hot_col && ui.hot_t ? T_ACCENT : T_THEME)   /* the knob just turned: accent */
 #define RATIO(d, v) ((d)->max > (d)->min ? ((int32_t)(v) - (d)->min) * 1000 / ((d)->max - (d)->min) : -1)
-/* layout: header 0..24, the page tabs 26..48 (FANTASMA: ui_draw.c draw_tabs), four cards 51..95 (57 px at x 3 + 59 c),
- * the panel 99..198 (a SURF area; the graphs live in it), footer 202..240; BG between them */
+/* layout: header 0..24, four cards 28..72 (57 px at x 3 + 59 c),
+ * the panel 76..198 (a SURF area; the graphs live in it), footer 202..240; BG between them */
 #define Y_HEAD 0
 #define H_HEAD 24
-#define Y_TABS 26                     /* the tabs: one per page of the button's family, the open one in its colour */
-#define H_TABS 22
-#define Y_LABEL 51                    /* the cards */
-#define Y_SEP_END 95
+#define Y_TABS 0                      /* FANTASMA: the page tabs, where the header was (the header's content: the footer) */
+#define H_TABS 24
+#define Y_LABEL 28                    /* the cards */
+#define Y_SEP_END 72
 #define CARD_W 57
 #define CARD_H 44
 #define CARD_X(c) (3 + 59 * (int32_t)(c))
-#define Y_GRAPH 99                    /* the panel */
-#define H_GRAPH 99
+#define Y_GRAPH 76                    /* the panel */
+#define H_GRAPH 122
 #define Y_FOOT 202
 #define H_FOOT 38
-/* MENU > LARGE (large_kind below): on the value pages the cards are tall (51..147) and the panel a strip
- * (151..198); elsewhere (lists, rolls, layers) the layout above, its card labels in M */
-#define LIST_ROWS 5u                  /* a list's rows in the panel (17 px each), the selected one the LIST_MID'th */
-#define LIST_MID 2u
-#define LG_CARD_H 96
-#define LG_Y_GRAPH 151
-#define LG_H_GRAPH 47
+/* MENU > LARGE (large_kind below): on the value pages the cards are tall (28..132) and the panel a strip
+ * (136..198); elsewhere (lists, rolls, layers) the layout above, its card labels in M */
+#define LG_CARD_H 104
+#define LG_Y_GRAPH 136
+#define LG_H_GRAPH 62
 
 static struct {
     uint8_t home;
@@ -1659,16 +1657,16 @@ static void preset_step(int32_t direction)
               (cur + (direction > 0 ? 1u : total - 1u)) % total);
 }
 
-/* LIST_ROWS display rows. FAV and a category use a bounded window, not a repeating carousel.
+/* Seven display rows. FAV and a category use a bounded window, not a repeating carousel.
  * Return total for an empty row; a current sound not in the list shows the start. */
 static uint32_t preset_visible(uint32_t cur, uint32_t total, uint32_t row)
 {
     uint32_t first, last;
-    if (!total || row >= LIST_ROWS) return total;
+    if (!total || row >= 7u) return total;
     if (!list_mode())
-        return (cur + total * 4u + row - LIST_MID) % total;
-    first = cur < total && cur > LIST_MID ? cur - LIST_MID : 0u;
-    last = total > LIST_ROWS ? total - LIST_ROWS : 0u;
+        return (cur + total * 4u + row - 3u) % total;
+    first = cur < total && cur > 3u ? cur - 3u : 0u;
+    last = total > 7u ? total - 7u : 0u;
     if (first > last) first = last;
     return first + row < total ? first + row : total;
 }
