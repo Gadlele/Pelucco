@@ -306,6 +306,7 @@ static void head_group(void)
     GFX_HOOK_ALIGN(0, 0, 0, H_HEAD, AL_V, "header text on its middle");
     cv_text(x + 4, HEAD_MY, &AF_M, b, T_THEME);
 }
+static uint8_t head_over_tabs;                         /* FANTASMA: the header drawn over the tabs of a page: only what the footer lacks */
 static void draw_head(void)
 {
     static int16_t metro_x = -1;                       /* the metronome's ink as drawn (-1: hidden), its beat */
@@ -355,8 +356,9 @@ static void draw_head(void)
     ui.head_sig = sig;
     metro_x = -1;
     cv_begin(240, H_HEAD, T_BG);
-    cv_icon_mid(HEAD_TRK_X, H_HEAD / 2, 16, trk_icon(song.sel, 1), T_ACCENT, T_BG);
-    if (slot && (centre || !msg)) {                    /* the slot letter (not under a message centred: its room) */
+    if (!head_over_tabs)                               /* (over the tabs: the footer has the track's number, slot, REC) */
+        cv_icon_mid(HEAD_TRK_X, H_HEAD / 2, 16, trk_icon(song.sel, 1), T_ACCENT, T_BG);
+    if (slot && (centre || !msg) && !head_over_tabs) {                    /* the slot letter (not under a message centred: its room) */
         char l[2] = {sl[0], 0};
         GFX_HOOK_ALIGN(0, 0, 0, H_HEAD, AL_V, "header text on its middle");
         rx = cv_text(HEAD_SLOT_X, HEAD_MY, &AF_M, l, sl[0] == '-' ? T_MID : T_THEME);
@@ -364,7 +366,8 @@ static void draw_head(void)
             rx = cv_text(rx, HEAD_MY, &AF_M, "*", T_MID);
         rx += 1;                                       /* (the REC mark's cell after it, its ink 3 px on) */
     }
-    draw_rec_mark(rx, T_BG);
+    if (!head_over_tabs)
+        draw_rec_mark(rx, T_BG);
     if (centre) {
         int32_t ib[4], lx = g.bx + g.b[2];             /* lx: the right end of the BPM (and its lock) */
         uint32_t id = song.playing ? (chain.running ? ICON_X_SONG : ICON_X_PLAY) : seq_counting() ? ICON_X_PLAY : ICON_X_STOP;
@@ -390,9 +393,9 @@ static void draw_head(void)
     } else {
         head_msg(-1, HEAD_MSG_W);
     }
-    if (!msg && (chain.running || song.octave))
+    if (!msg && (chain.running || song.octave) && !head_over_tabs)
         head_group();
-    if (!(msg && centre))
+    if (!(msg && centre) && !head_over_tabs)
         draw_battery(HEAD_BAT_X);
     cv_blit(0, Y_HEAD);
     ui.tab_sig = 0;                                    /* (the tabs redraw when they come back) */
@@ -1768,7 +1771,11 @@ static void ui_draw_page(uint32_t counting)
         draw_frame();
     felucca_dbg.stage = 3;
     if (ui.msg_t || ui.bpm_t || song.g[G_BPM] != ui.roll_bpm || ui.roll[ROLL_BPM].from[0])   /* FANTASMA: the tabs where the */
-        draw_head();                                    /* header was; a message or the BPM changing takes the strip for its moment */
+    {                                                   /* header was; a message or the BPM changing takes the strip for its moment */
+        head_over_tabs = 1;
+        draw_head();
+        head_over_tabs = 0;
+    }
     else
         draw_tabs(ui.force);
     felucca_dbg.stage = 4;
