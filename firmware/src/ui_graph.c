@@ -1922,17 +1922,23 @@ static int32_t mote_rnd(int32_t n)                     /* 0..n-1 */
 }
 static void graph_motes(uint16_t acc)
 {
-    int32_t w = PANEL_W, h = (int32_t)cv_h, i, pk = 0, lv;
+    int32_t w = PANEL_W, h = (int32_t)cv_h, i, pk = 0, lv, zc = 0, pt, kick;
     static int32_t lvl;
+    uint16_t hi;
     for (i = 0; i < 64; i++) {                       /* the sound's level: the scope's peak (instant attack, slow release) */
         int32_t v = scope_buf[(scope_w + (uint32_t)i * 8u) & (SCOPE_N - 1u)];
         v = v < 0 ? -v : v;
         pk = v > pk ? v : pk;
     }
-    lv = clamp(pk / 64, 0, 256);
-    lvl = lv > lvl ? lv : lvl - ((lvl - lv) >> 3) - 1;
+    for (i = 1; i < 64; i++)                         /* its pitch, roughly: sign changes in 64 consecutive samples */
+        zc += (scope_buf[(scope_w + (uint32_t)i) & (SCOPE_N - 1u)] ^ scope_buf[(scope_w + (uint32_t)i - 1u) & (SCOPE_N - 1u)]) < 0;
+    pt = clamp(zc * 8, 0, 256);                      /* low note 0 .. high note 256 */
+    lv = clamp(pk / 24, 0, 256);
+    kick = lv - lvl > 40 ? 1 : 0;                    /* a new note: a burst from the middle */
+    lvl = lv > lvl ? lv : lvl - ((lvl - lv) >> 4) - 1;
     lvl = lvl < 0 ? 0 : lvl;
     lv = lvl;
+    hi = ux_mix(acc, T_ACCENT, (uint32_t)pt * 100u >> 8);   /* low notes in the track's colour, high ones towards the accent */
     if (!mote_on) {
         mote_on = 1;
         for (i = 0; i < MOTE_N; i++) {
@@ -1947,8 +1953,12 @@ static void graph_motes(uint16_t acc)
         uint32_t ph = (uint32_t)(mote[i].ph += (uint8_t)(1 + d)) << 24;
         mote[i].vx = (int16_t)((mote[i].vx * 7 >> 3) + sp + (osc_sine(ph) * 6 >> 15) + mote_rnd(9) - 4);
         mote[i].vy = (int16_t)((mote[i].vy * 7 >> 3) + (osc_sine(ph + 0x40000000u) * 5 >> 15) + mote_rnd(9) - 4);
-        mote[i].vx = (int16_t)(mote[i].vx + ((mote_rnd(33) - 16) * lv >> 8));          /* the sound stirs them */
-        mote[i].vy = (int16_t)(mote[i].vy + ((mote_rnd(33) - 16) * lv >> 8) - (lv >> 6));
+        mote[i].vx = (int16_t)(mote[i].vx + ((mote_rnd(33) - 16) * lv >> 6) + (sp * pt * lv >> 14));   /* the sound stirs them */
+        mote[i].vy = (int16_t)(mote[i].vy + ((mote_rnd(33) - 16) * lv >> 6) - (lv >> 4) - (pt * lv >> 12));
+        if (kick) {                                  /* the attack throws them away from the centre */
+            mote[i].vx = (int16_t)(mote[i].vx + (((mote[i].x >> 6) - w / 2) * (d + 1)) / 3);
+            mote[i].vy = (int16_t)(mote[i].vy + (((mote[i].y >> 6) - h / 2) * (d + 1)) / 3);
+        }
         mote[i].x = (int16_t)(mote[i].x + mote[i].vx);
         mote[i].y = (int16_t)(mote[i].y + mote[i].vy);
         if (mote[i].x >= (w - 6) << 6)
@@ -1961,13 +1971,13 @@ static void graph_motes(uint16_t acc)
             mote[i].y = (int16_t)(mote[i].y - ((h - 6) << 6));
         x = PANEL_X0 + (mote[i].x >> 6);
         y = mote[i].y >> 6;
-        br = 22 + d * 22 + (lv * (20 + d * 15) >> 8);
+        br = 22 + d * 22 + (lv * (50 + d * 25) >> 8);
         if (br > 100)
             br = 100;
-        if (d == 2)
-            cv_rect(x, y, 2, 2, ux_mix(T_SURF, acc, br));
+        if (d == 2 || (d == 1 && lv > 128))          /* loud: the middle ones swell too */
+            cv_rect(x, y, 2, 2, ux_mix(T_SURF, hi, br));
         else
-            cv_pset(x, y, ux_mix(T_SURF, acc, br));
+            cv_pset(x, y, ux_mix(T_SURF, hi, br));
     }
 }
 static void graph_scope(uint16_t c) __attribute__((unused));
