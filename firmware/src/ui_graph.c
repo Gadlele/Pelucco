@@ -1950,7 +1950,7 @@ static void graph_motes(uint16_t acc)
         }
     }
     for (i = 0; i < MOTE_N; i++) {
-        int32_t x, y, d = mote[i].d, br, k, sp = 1 + d + (lv * (2 + d * 2) >> 8);
+        int32_t x, y, d = mote[i].d, br, sp = 1 + d + (lv * (2 + d * 2) >> 8);
         uint32_t ph = (uint32_t)(mote[i].ph += (uint8_t)(1 + d)) << 24;
         mote[i].vx = (int16_t)((mote[i].vx * 7 >> 3) + sp + (osc_sine(ph) * 2 >> 15) + mote_rnd(5) - 2);
         mote[i].vy = (int16_t)((mote[i].vy * 7 >> 3) + (osc_sine(ph + 0x40000000u) * 2 >> 15) + mote_rnd(5) - 2);
@@ -1977,11 +1977,6 @@ static void graph_motes(uint16_t acc)
         br = 22 + d * 22 + (lv * (50 + d * 25) >> 8);
         if (br > 100)
             br = 100;
-        for (k = 1; k <= 4; k++) {                   /* the trail: behind it, as long as it is fast, fading */
-            int32_t tx = x - (mote[i].vx * k * 3 >> 6), ty = y - (mote[i].vy * k * 3 >> 6);
-            if (tx != x || ty != y)
-                cv_pset(tx, ty, ux_mix(T_SURF, hi, br * (5 - k) / 10));
-        }
         if (d == 2 || (d == 1 && lv > 128))          /* loud: the middle ones swell too */
             cv_rect(x, y, 2, 2, ux_mix(T_SURF, hi, br));
         else
