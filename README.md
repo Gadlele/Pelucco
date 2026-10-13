@@ -467,6 +467,12 @@ button rings on after the button is let go, until the next button (or back to OM
 
 ## If the FM-1 does not start
 
+**USB rescue** (after [dinghy](https://github.com/zvenson/dinghy), zvenson): hold **OCT-** alone while
+powering on, or let two boots in a row die in their first 30 s, and the FM-1 starts the rescue screen
+"FANTASMA USB RESCUE": no audio, no UI, no settings, only USB and the updater. It answers as the stock firmware
+(FM-1_000), so the web installer or the FM-1 Firmware Hub can install any package. If the rescue itself crashes,
+the next boot goes to the chip's UBOOT (below). A cold power-on clears the failed-boot count.
+
 If an update is interrupted and the FM-1 stays black, check whether a computer sees it as a USB device named
 **WL80UBOOT** (or a USB mass-storage device with ID 4C4A:8057). That is the chip's built-in boot mode, and
 the FM-1 can be brought back:
