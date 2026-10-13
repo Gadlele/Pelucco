@@ -439,7 +439,8 @@ static void draw_gaps(uint32_t y, uint32_t h)
 static void draw_frame(void)
 {
     uint32_t ch = card_h(), gy = graph_y(), gh = graph_h();   /* (MENU > LARGE: tall cards, a strip) */
-    gap_rows(H_HEAD, Y_LABEL);
+    gap_rows(H_HEAD, Y_TABS);
+    gap_rows(Y_TABS + H_TABS, Y_LABEL);
     gap_rows(Y_LABEL + ch, gy);
     gap_rows(gy + gh, Y_FOOT);
     draw_gaps(Y_LABEL, ch);
@@ -723,6 +724,185 @@ static void sound_name(const track_t *t, char *b)
         str_cpy(b, e->presets[t->preset % e->npresets].name, 16);
 }
 
+/* ------------------------------------------------------------------ the page tabs (FANTASMA) ---
+ * A strip between the header and the cards: a tab for each page of the button's family, as the footer's "NAME i/n"
+ * counted them. The open page is a tab in the button's colour (one fixed colour per button) reading "BUTTON · PAGE"
+ * (just the page when its name starts with the button's); the others are dark, short. The colour's 2 px line runs
+ * under the tabs and the open tab ends exactly on it. */
+static const char *const TAB_BTN[FAM_COUNT] = {"HOME", "ENV", "LFO", "FX", "SCL", "EDIT", "GLO", "SAVE", "ARP", "SEQ", "HOME"};
+#define TAB_NCOL FAM_COUNT
+static uint16_t tab_colour(uint32_t fam)
+{
+    static const uint16_t C[FAM_COUNT] = {RGB(63, 240, 255), RGB(255, 180, 60), RGB(165, 115, 255), RGB(255, 125, 200),
+                                          RGB(160, 240, 70), RGB(255, 63, 208), RGB(255, 110, 110), RGB(120, 185, 255),
+                                          RGB(255, 235, 90), RGB(70, 240, 180), RGB(63, 240, 255)};
+    uint16_t c = C[fam % TAB_NCOL];
+    if (ux.mono)                                       /* GREY: its luma; MONO (black and white: REC is the text's): white */
+        return ux_gray(ux_luma(c) * 31u / 255u);
+    return ux.rec == ux.text ? ux.text : c;
+}
+/* a page's name for its tab, without the position (EDIT: the engine's: "OSC") */
+static int starts(const char *s, const char *p)
+{
+    for (; *p; p++, s++)
+        if (*s != *p)
+            return 0;
+    return 1;
+}
+static const char *tab_title(uint32_t i)
+{
+    const page_t *pg = &PAGES[i];
+    const engine_t *e = ENGINES[TSEL->eng_req % NENGINES];
+    const char *pt = pg->scope == SC_ENGINE ? e->page_title[pg->id[0] != P_E0] : 0;
+    if (pt)
+        return pt;
+    if (i == ui.page && !ui.home && grid_on() && !detail_on())
+        return "GRID";
+    return pg->title;
+}
+/* the short form of a dark tab: the title after the button's name ("LFO 2": "2"), a few known contractions, else
+ * its first word cut to `n` letters; a trailing number stays ("VOICE 2": "VOI 2", then "V2") */
+static void tab_short(char *o, const char *btn, const char *t, uint32_t n)
+{
+    static const char *const K[][2] = {{"OPERATOR", "OP"}, {"AUTOMATION", "AUTO"}, {"AMBIENT", "AMBI"}, {"REVERB", "REV"},
+                                       {"CHORUS", "CHOR"}, {"SLICER", "SLCR"}, {"INSERT", "INS"}, {"PRESETS", "PRE"},
+                                       {"PHRASES", "PHR"}, {"PROJECT", "PROJ"}, {"DETAIL", "DET"}, {"FILTER", "FILT"},
+                                       {"VOICE", "VOI"}, {"MIXER", "MIX"}, {"CLOCK", "CLK"}};
+    uint32_t i, bl = str_len(btn), k = 0, wl;
+    char w[20], num[8];
+    if (starts(t, btn) && t[bl] == ' ')
+        t += bl + 1u;
+    str_cpy(w, t, sizeof w);
+    while (w[k] && w[k] != ' ')
+        k++;
+    num[0] = 0;
+    if (w[k] == ' ')                                          /* "VOICE 2": the number follows the word */
+        str_cpy(num, w + k + 1, sizeof num);
+    w[k] = 0;
+    wl = k;
+    for (i = 0; i < sizeof K / sizeof K[0]; i++)
+        if (str_eq(w, K[i][0])) {
+            str_cpy(w, K[i][1], sizeof w);
+            wl = str_len(w);
+            break;
+        }
+    if (wl > n) {
+        w[n] = 0;
+        wl = n;
+    }
+    str_cpy(o, w, 8);
+    if (num[0]) {
+        if (n < 3u)
+            o[wl > 1u ? 1u : wl] = 0;                      /* "V2" */
+        else
+            str_cpy(o + str_len(o), " ", 2);
+        str_cpy(o + str_len(o), num, 4);
+    }
+}
+#define TAB_PAD 5
+#define TAB_MARK 12                                    /* the "<" ">" tabs of a window */
+static void draw_tabs(uint32_t force)
+{
+    uint32_t fam = ui.home ? FAM_HOME : cur_page()->fam, i, n = 0, open = 0, pass, sig, pad = TAB_PAD, lo, hi;
+    uint8_t idx[24];
+    char nm[24][20], full[24][20], big[28];
+    int32_t w[24], tot, x;
+    uint16_t col;
+    const char *btn;
+    if (fam == FAM_TRK)
+        fam = FAM_HOME;
+    btn = TAB_BTN[fam];
+    col = tab_colour(fam);
+    if (fam == FAM_HOME) {                                 /* HOME: its own screen, then MIXER, CLOCK (FAM_TRK) */
+        idx[n] = 0xFF;
+        str_cpy(full[n++], "HOME", 20);
+    }
+    for (i = 0; i < NPAGES && n < 24u; i++)
+        if (PAGES[i].fam == (fam == FAM_HOME ? FAM_TRK : fam) && page_visible(i)) {
+            if (i == ui.page && !ui.home)
+                open = n;
+            idx[n] = (uint8_t)i;
+            str_cpy(full[n++], tab_title(i), 20);
+        }
+    sig = str_hash(0x7AB5u, btn) + open * 31u + n * 977u + (uint32_t)ux.style * 5u + (uint32_t)ux.theme * 3u + ux.gen * 7u;
+    for (i = 0; i < n; i++)
+        sig = str_hash(sig, full[i]);
+    if (!force && sig == ui.tab_sig)
+        return;
+    ui.tab_sig = sig;
+    str_cpy(big, full[open], 16);                          /* the open tab: "BUTTON · PAGE" */
+    if (!starts(full[open], btn)) {
+        str_cpy(big, btn, 8);
+        str_cpy(big + str_len(big), " \xB7 ", 6);
+        str_cpy(big + str_len(big), full[open], 12);
+    }
+    for (pass = 0; pass < 5u; pass++) {                    /* the dark tabs shorter until the strip fits */
+        static const uint8_t CUT[5] = {5, 4, 4, 4, 3};
+        pad = pass > 2u ? 3u : TAB_PAD;
+        tot = 3;
+        for (i = 0; i < n; i++) {
+            if (i == open) {
+                str_cpy(nm[i], big, 20);
+            } else if (pass == 0u && !starts(full[i], "OP") && text_w(&AF_T, full[i]) < 30) {
+                str_cpy(nm[i], full[i], 20);               /* (short enough as it is) */
+                if (starts(full[i], btn) && full[i][str_len(btn)] == ' ')
+                    tab_short(nm[i], btn, full[i], CUT[pass]);
+            } else {
+                tab_short(nm[i], btn, full[i], CUT[pass]);
+            }
+            w[i] = text_w(&AF_T, nm[i]) + 2 * (int32_t)pad;
+            tot += w[i] + 2;
+        }
+        if (tot <= 240)
+            break;
+    }
+    lo = 0;                                                /* still too wide (FM6's EDIT: 12 pages): a window of tabs */
+    hi = n - 1u;                                           /* around the open one, a "<" / ">" tab where more lie beyond */
+    if (tot > 240) {
+        int32_t used = w[open] + 2, room = 240 - 3 - 2 * (TAB_MARK + 2);
+        lo = hi = open;
+        for (;;) {
+            int grew = 0;
+            if (lo > 0u && used + w[lo - 1u] + 2 <= room + (lo == 1u ? TAB_MARK + 2 : 0) + (hi == n - 1u ? TAB_MARK + 2 : 0)) {
+                lo--;
+                used += w[lo] + 2;
+                grew = 1;
+            }
+            if (hi + 1u < n && used + w[hi + 1u] + 2 <= room + (lo == 0u ? TAB_MARK + 2 : 0) + (hi + 2u == n ? TAB_MARK + 2 : 0)) {
+                hi++;
+                used += w[hi] + 2;
+                grew = 1;
+            }
+            if (!grew)
+                break;
+        }
+    }
+    cv_begin(240, H_TABS, T_BG);
+    x = 3;
+    if (lo > 0u) {
+        cv_rrect(x, 4, TAB_MARK, H_TABS - 4 + 6, -5, T_RAISE, T_BG);
+        cv_text_on(x + 2, 8 - AF_T_CAP_Y, &AF_T, "<", T_MID, T_RAISE);
+        x += TAB_MARK + 2;
+    }
+    for (i = lo; i <= hi; i++) {                           /* the dark tabs first, then the line, then the open tab */
+        if (i != open) {
+            cv_rrect(x, 4, w[i], H_TABS - 4 + 6, -5, T_RAISE, T_BG);
+            cv_text_on(x + (int32_t)pad, 8 - AF_T_CAP_Y, &AF_T, nm[i], T_MID, T_RAISE);
+        }
+        x += w[i] + 2;
+    }
+    if (hi + 1u < n) {
+        cv_rrect(x, 4, TAB_MARK, H_TABS - 4 + 6, -5, T_RAISE, T_BG);
+        cv_text_on(x + 2, 8 - AF_T_CAP_Y, &AF_T, ">", T_MID, T_RAISE);
+    }
+    cv_rect(0, H_TABS - 2, 240, 2, col);
+    x = 3 + (lo > 0u ? TAB_MARK + 2 : 0);
+    for (i = lo; i < open; i++)
+        x += w[i] + 2;
+    cv_rrect(x, 0, w[open], H_TABS + 6, -5, col, T_BG);
+    cv_text_on(x + (int32_t)pad, 7 - AF_T_CAP_Y, &AF_T, big, T_INK, col);
+    cv_blit(0, Y_TABS);
+}
 static void draw_foot(void)
 {
     char s[48], pn[16], ti[20], ln[24];
@@ -737,6 +917,8 @@ static void draw_foot(void)
         str_cpy(ti, ROLE_NAME[song.sel % NPART], sizeof ti);   /* Pelucco: HOME is the part's: PAD LEAD ECHOES NOISE */
     else                                               /* page title + number in its family: "ENV DEST 2/2" */
         page_title(ti);
+    if (!ui.home && pg->graph != GR_ROLL)              /* FANTASMA: the page is on its tab */
+        ti[0] = 0;
     str_cpy(s, ename, sizeof s);
     s[str_len(s) + 1u] = 0;
     s[str_len(s)] = (char)('1' + song.sel);
@@ -822,7 +1004,7 @@ static void draw_foot(void)
     }
     {   /* row 2: engine icon + name, sound, page title at the right with its icon before it (MIXER, PHRASES, SONG,
          * AUTOMATION); icons: their ink on the names' capitals */
-        uint32_t pi = ui.home ? ICON_NONE : page_icon(pg), ei = FELUCCA_ICONS ? engine_icon(ename) : ICON_NONE;
+        uint32_t pi = ui.home || !ti[0] ? ICON_NONE : page_icon(pg), ei = FELUCCA_ICONS ? engine_icon(ename) : ICON_NONE;
         int32_t r = 232, tx, ex, need = text_w(&AF_S, pn), ew = text_w(&AF_S, ename);
         ex = 8 + (FELUCCA_ICONS ? 12 + 5 : 0) + (ew < 80 ? ew : 80);   /* (where the engine's name ends) */
         tx = r - text_w(&AF_S, ti) - (pi != ICON_NONE ? 16 : 0);
@@ -1507,6 +1689,7 @@ static void ui_draw_page(uint32_t counting)
         if (ui.force)
             draw_frame();
         draw_head();
+        draw_tabs(ui.force);
         draw_layer();
         if (ui.msg_t && !--ui.msg_t && ui.msg2[0]) {
             str_cpy(ui.msg, ui.msg2, sizeof ui.msg);
@@ -1530,6 +1713,7 @@ static void ui_draw_page(uint32_t counting)
         draw_frame();
     felucca_dbg.stage = 3;
     draw_head();
+    draw_tabs(ui.force);
     felucca_dbg.stage = 4;
     draw_columns();
     felucca_dbg.stage = 5;
