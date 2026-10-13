@@ -78,7 +78,7 @@ static void fm1_fault(const fm1_crash_t *c)
     fm1_audio_stop();
     scr_wake_now();                                   /* (MENU > SCREEN OFF: the panel on first) */
     lcd_fill(0, 0, 240, 240, UI_CRASH_BG);            /* fixed, outside the palettes */
-    draw_text_line(0, 8, 240, &AF_M, "FELUCCA CRASH", UI_CRASH_INK, UI_CRASH_BG, 1);
+    draw_text_line(0, 8, 240, &AF_M, "FANTASMA CRASH", UI_CRASH_INK, UI_CRASH_BG, 1);
     hexs(b, c->vec);
     draw_text_line(10, 40, 220, &AF_M, b, UI_CRASH_INK, UI_CRASH_BG, 0);
     hexs(b, c->pc);
@@ -288,6 +288,65 @@ static void fm1_main(void)
     }
 }
 
+#if FELUCCA_RESCUE
+/* The USB rescue (after dinghy's recovery.c, zvenson, GPL-3.0): OCT- alone held at power-on, or two boots in a row
+ * that died: no audio, no UI, no settings, no flash write; only USB and the updater, so the web installer or the FM-1
+ * Firmware Hub can always install another build. It answers as the stock firmware (OTA_IDENTITY: any package
+ * installs). A crash or hang in here (bootguard.pending 2) sends the next boot to the chip's UBOOT */
+static int rescue_key(void)                     /* OCT- alone held (the raw matrix: OCT- 0, OCT+ 1; both: calibration) */
+{
+    uint32_t t0 = fm1_ticks();
+    fm1_input_init();
+    do {
+        fm1_wdt_feed();
+        fm1_input_scan();
+    } while ((uint32_t)(fm1_ticks() - t0) < 60u * 1000u * FM1_TICKS_PER_US);
+    return (fm1_in.buttons & 3u) == 1u;
+}
+static void rescue_text(uint32_t y, const char *s, uint16_t c)
+{
+    draw_text_line(0, y, 240, &AF_M, s, c, RGB(0, 0, 0), 1);
+}
+static void usb_rescue(void)
+{
+    rescue_active = 1;
+    bootguard.pending = 2;
+    palette_set(0);                             /* (ota.c's screens draw in the palette) */
+    flash_ok = FL_FAR(fl_jedec_ram)() == 0x856014u;
+    lcd_init();
+    lcd_fill(0, 0, 240, 240, RGB(0, 0, 0));
+    rescue_text(56, "FANTASMA USB RESCUE", RGB(255, 181, 71));
+    rescue_text(96, "CONNECT USB", RGB(232, 230, 225));
+    rescue_text(120, flash_ok ? "OPEN THE INSTALLER" : "UNKNOWN FLASH", RGB(232, 230, 225));
+    rescue_text(160, "AUDIO OFF", RGB(150, 156, 172));
+    lcd_sync();
+    fm1_input_init();
+    usb_start();
+    timer5_start();                             /* the key scan, the ms, the USB poll (nothing of the audio) */
+    fm1_guard_lock_top();
+    fm1_irq_enable_all();
+    for (;;) {
+        fm1_wdt_feed();
+        usb_retry(fm1_ms);
+        if (usb.uboot_req) {                    /* SysEx soft key: the chip's UBOOT */
+            usb_detach();
+            fm1_delay_ms(30);
+            bootguard.pending = 0;
+            fm1_enter_uboot();
+        }
+        ota_service();
+        if (usb.ota_req) {
+            usb.ota_req = 0;
+            if (flash_ok)
+                ota_session();                  /* the same checked updater as always (ota_commit: pending 0) */
+            lcd_fill(0, 0, 240, 240, RGB(0, 0, 0));
+            rescue_text(56, "FANTASMA USB RESCUE", RGB(255, 181, 71));
+            rescue_text(96, "CONNECT USB", RGB(232, 230, 225));
+        }
+    }
+}
+#endif
+
 void fm1_cstart(void)
 {
     uint32_t *s, *d, p3, src, wdt;
@@ -302,6 +361,43 @@ void fm1_cstart(void)
         bootguard.failed = 0;
         bootguard.pending = 0;
     }
+#if FELUCCA_RESCUE
+    {   /* (after dinghy, zvenson) a cold power-on starts clean; the USB rescue that died itself: the chip's UBOOT;
+         * two boots in a row that died in their first 30 s: the USB rescue (below) */
+        uint32_t rescue = 0;
+        if ((p3 & 1u) && !(p3 & (4u | 0x40u)))
+            bootguard.failed = bootguard.pending = 0;
+        if (bootguard.pending == 2u || bootguard.failed > 2u) {
+            bootguard.failed = 0;
+            bootguard.pending = 0;
+            fm1_enter_uboot();
+        }
+        if (bootguard.pending)
+            bootguard.failed++;
+        bootguard.pending = 1;
+        if (bootguard.failed >= 2u)
+            rescue = 1;
+        fm1_irq_init();
+        for (d = _bss_start; d < _bss_end; d++)
+            *d = 0;
+        for (d = _pool_start; d < _pool_end; d++)
+            *d = 0;
+        for (s = _data_load, d = _data_start; d < _data_end; s++, d++)
+            *d = *s;
+        for (s = _rt_load, d = _rt_start; d < _rt_end; s++, d++)
+            *d = *s;
+        fm1_mailbox_clear();
+        fm1_guard_enable(FM1_GUARD_STACK | FM1_GUARD_WRITE | FM1_GUARD_BUS | FM1_GUARD_PC);
+        fm1_boot.p3_rst = (uint8_t)p3;
+        fm1_boot.rst_src = src;
+        fm1_boot.wdt_con = (uint8_t)wdt;
+        if (rescue || rescue_key())
+            usb_rescue();                    /* never returns */
+        fm1_main();
+        for (;;)
+            ;
+    }
+#endif
     if (bootguard.pending)
         bootguard.failed++;
     bootguard.pending = 1;

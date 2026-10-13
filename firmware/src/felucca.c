@@ -94,6 +94,10 @@
 #include "upreset.c"             /* user presets (RAM mirror; flash with FELUCCA_FLASH) */
 #include "project.c"
 #if FELUCCA_OTA
+#if FELUCCA_RESCUE
+static uint8_t rescue_active;            /* main.c usb_rescue: the USB rescue runs (no audio, no UI) */
+#define OTA_IDENTITY (rescue_active ? "FM-1_000" : FELUCCA_ID)   /* (as dinghy: any package installs from it) */
+#endif
 #include "ota.c"
 #include "ota_hw.c"
 #include "editor.c"              /* web editor SysEx (needs the OTA SysEx plumbing) */
