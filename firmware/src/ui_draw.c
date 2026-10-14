@@ -904,7 +904,7 @@ static void draw_tabs(uint32_t force)
     cv_blit(0, Y_TABS);
     ui.head_sig = 0;                                       /* (the header redraws when it comes back) */
 }
-/* FANTASMA: what the header showed, small, at the right of the footer's second row: [OCT / song row] [REC] [play state]
+/* FANTASMA: what the header showed, small, at the right of the footer's second row: [song row] [REC] [play state]
  * the BPM, the battery. Returns the x where it starts (the sound's name ends before it); the middle line is row 25 */
 #define FS_MID 26
 static int32_t foot_status(uint32_t draw)
@@ -934,20 +934,13 @@ static int32_t foot_status(uint32_t draw)
         x -= 8 + text_w(&AF_S, b);
         if (draw)
             cv_text(x, 19, &AF_S, b, T_THEME);
-    } else if (song.octave) {                          /* OCT +2 */
-        str_cpy(b, song.octave > 0 ? "+" : "", sizeof b);
-        fmt_int(b + str_len(b), song.octave);
-        x -= 8 + text_w(&AF_S, "OCT") + 3 + text_w(&AF_S, b);
-        if (draw) {
-            int32_t tx = cv_text(x, 19, &AF_S, "OCT", T_MID);
-            cv_text(tx + 3, 19, &AF_S, b, T_THEME);
-        }
-    }
+    }                                                  /* (the octave: OCT- / OCT+'s LEDs; in the footer it left
+                                                        * the sound's name no room on HOME) */
     return x;
 }
 static void draw_foot(void)
 {
-    char s[48], pn[16], ti[20], ln[24], sb[3];
+    char s[48], pn[16], ti[20], ln[24], sb[3] = {0, 0, 0};
     const track_t *t = TSEL;
     uint32_t sig;
     const page_t *pg = cur_page();
@@ -967,12 +960,12 @@ static void draw_foot(void)
     str_cpy(s + str_len(s), pn, 16);
     str_cpy(s + str_len(s), ti, sizeof ti);
     {   /* step markers: the playhead only when it is in the shown bank, the cursor only in SEQ */
-        uint32_t ph = song.playing && t->seq_idx / 16u == ui.bank ? t->seq_idx : 0xFFu;
+        uint32_t ph = song.playing && t->seq_idx / 16u == ui.bank ? t->seq_idx : 0xFFu, slot = (uint32_t)head_slot(sb);
         sig = str_hash(0x9E3779B9u, s) + ph * 97u + (song.seq_mode ? ui.cursor : 0xFFu) * 3001u + steps_hash(t) +
               (ui.home ? 0u : page_icon(pg)) * 7121u +
               ui.bank * 7u + (uint32_t)t->p[P_SLEN] * 13u + (uint32_t)song.g[G_BPM] * 101u + (uint32_t)song.playing * 3u +
-              (uint32_t)song.rec * 17u + (uint32_t)(song.octave + 8) * 11u + (uint32_t)batt_shown() * 7777u +
-              (uint32_t)seq_counting() * 7u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + (uint32_t)head_slot(sb) * 977u + (uint32_t)sb[0] * 31u + (uint32_t)sb[1] * 7u;
+              (uint32_t)song.rec * 17u + (uint32_t)batt_shown() * 7777u +
+              (uint32_t)seq_counting() * 7u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + (uint32_t)slot * 977u + (uint32_t)sb[0] * 31u + (uint32_t)sb[1] * 7u;
     }
     if (act_cols()) {                                  /* the hint, and whether OCT+ would act */
         char ha[16], hb[16];
