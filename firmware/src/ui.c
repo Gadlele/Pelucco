@@ -1410,8 +1410,11 @@ static void ambient_random(void)
         } else if (ti == 3u) {                                 /* the Noise: one note, never let go */
             t->p[P_REL] = 127;
             t->p[P_ESYNC] = 0;
+            uint32_t note = (uint32_t)clamp(scale_snap(t, 36 + (int32_t)(rng() % 24u)), 0, 127);
+            fm1_irq_off();                                     /* (the voices are the audio ISR's) */
             seq_release(t);
-            ambient_drone(t, (uint32_t)clamp(scale_snap(t, 36 + (int32_t)(rng() % 24u)), 0, 127));
+            ambient_drone(t, note);
+            fm1_irq_on();
         } else if (FELUCCA_BELL && e == ENGI_BELL) {            /* Echoes: the bells play by themselves */
             t->p[P_E4] = (int16_t)(20u + rng() % 11u);
             t->p[P_E5] = (int16_t)(15u + rng() % 36u);
@@ -1420,8 +1423,10 @@ static void ambient_random(void)
             if (t->p[P_DLY] < 30)
                 t->p[P_DLY] = (int16_t)(30u + rng() % 30u);
         }
+        fm1_irq_off();
         garden[ti] = 0;                                         /* Echoes' garden starts again from the scale */
         gen_restart(ti);
+        fm1_irq_on();
     }
     song.g[G_RTYPE] = 3;                                        /* the reverb: AMBI, SIZE 100, DAMP 0 */
     song.g[G_RSIZE] = 127;
@@ -1442,7 +1447,9 @@ static void ambient_stop(void)
         trk[2].p[P_E4] = 0;
     if (FELUCCA_AMBI && eng_idx(t->eng_req) == ENGI_AMBI)
         t->p[P_REL] = 64;
+    fm1_irq_off();
     seq_release(t);
+    fm1_irq_on();
     panic_req |= (uint8_t)(1u << 3);                    /* the Noise: every voice let go now, and noise_keep no longer strikes it */
     ui_message("AMBIENT STOP");
     ui.force = 1;
