@@ -85,7 +85,8 @@ static void ambi_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
         x = w;
         if (colr) {                                   /* pink: three leaky poles (Kellet), brown: a leaky integrator */
             int32_t pk;
-            b0 = ((b0 * 32690) >> 15) + ((w * 3245) >> 15);
+            b0 = b0 - ((b0 * 78) >> 15) + ((w * 3245) >> 15);   /* (x 32690 / 32768 as b0 - b0 * 78: b0 reaches
+                                                                * +-70000, b0 * 32690 overflowed into clicks) */
             b1 = ((b1 * 31555) >> 15) + ((w * 9716) >> 15);
             b2 = ((b2 * 18678) >> 15) + ((w * 17247) >> 14);
             pk = (b0 + b1 + b2 + ((w * 6055) >> 15)) >> 2;
