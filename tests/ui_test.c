@@ -165,6 +165,10 @@ static int check(const char *what, int ok)
 /* The parts the harness starts with: the first sounds of the suite's tests (bass, pad, bells, drums), not Pelucco's power-on
  * parts (TRK_DEF: PAD, LEAD, ECHOES, NOISE), so that what the tests assume of a track does not move with the factory sounds */
 static const uint8_t TEST_TRK[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {FELUCCA_BELL ? ENGI_BELL : 3, 0, 0}, {ENGI_DRUM, 0, 0}};
+/* (Pelucco 1.0) the stored formats before FUN10's mark are Felucca's: engine 3 / 13 there are LOFI / SLICE, which load
+ * as AMBI's / BELL's defaults (project.c proj_from_felucca). A test of their exact round trip puts part 3 (BELL here)
+ * on PHASE, an engine both have */
+static void felucca_parts(void);
 /* main.c felucca_init */
 static void ui_power_on(void)
 {
@@ -3878,6 +3882,48 @@ static void lay_combo(uint32_t btn, uint32_t k) { btn_down(btn); key_down(k); fr
 static void oct_back(void) { btn_down(B_OCTDN); frame(); btn_up(B_OCTDN); frame(); }
 
 /* Pelucco: SEQ > AMBIENT, OCT+ (ui.c ambient_random): the Pad and Echoes drawn anew on one ROOT and SCALE */
+static void felucca_parts(void)
+{
+    set_engine_of(&trk[2], 2);
+    apply_preset_to(&trk[2], 0);
+    trk[2].engine = trk[2].eng_req;
+}
+/* Pelucco 1.0: a user preset Pelucco writes carries its mark (upreset.c UP_PEL_AT) and loads as it is; one without it
+ * (Felucca's, where engine 3 is LOFI and 13 SLICE) on those engines loads AMBI's / BELL's defaults; a rename keeps
+ * what the record was */
+static int test_up_pelucco(void)
+{
+    int bad = 0;
+    int16_t v[P_COUNT];
+    up_rec_t r;
+    uint32_t i, keep = 1, def = 1;
+    ui_power_on();
+    track_select(3);
+    set_engine_of(TSEL, ENGI_AMBI);                 /* (the tests' power-on is Felucca's parts: TEST_TRK) */
+    apply_preset_to(TSEL, 0);
+    TSEL->engine = TSEL->eng_req;
+    bad += check("Pelucco 1.0: the Noise on AMBI (engine 3)", TSEL->eng_req == ENGI_AMBI);
+    for (i = 0; i < 8u; i++)
+        TSEL->p[P_E0 + i] = (int16_t)(10 + i);
+    bad += check("  a user preset it writes carries the mark", (up_store(9, "AMB") & ~3) == 0 && up_used(9) &&
+                 up_rec(9)->packed[UP_PEL_AT] == UP_PELUCCO);
+    up_values(up_rec(9), v);
+    for (i = 0; i < 8u; i++)
+        keep &= v[P_E0 + i] == (int16_t)(10 + i);
+    bad += check("  it loads as it is (AMBI's values)", keep);
+    r = *up_rec(9);
+    r.packed[UP_PEL_AT] = 0;                        /* (as Felucca writes it: LOFI's values) */
+    up_values(&r, v);
+    for (i = 0; i < 8u; i++)
+        def &= v[P_E0 + i] == param_desc_of(ENGI_AMBI, P_E0 + i)->def;
+    bad += check("  one without the mark (Felucca's LOFI): AMBI's defaults", def);
+    up_put(9, &r);
+    up_rename(9, "RENAMED");
+    bad += check("  renamed: still unmarked (its values were never AMBI's)", up_rec(9)->packed[UP_PEL_AT] == 0u);
+    up_put(9, 0);
+    ui_power_on();
+    return bad;
+}
 static int test_ambient(void)
 {
     int bad = 0, ok = 1, i, same = 1, root_ok = 1, eng_ok_ = 1, gen_ok = 1, seen_root = 0, seen_eng = 0;
@@ -9904,6 +9950,7 @@ int main(void)
     bad += test_roles();
     bad += test_part_sounds();
     bad += test_ambient();
+    bad += test_up_pelucco();
     bad += test_fm6_charts();
     bad += test_fm6_ops();
     bad += test_home_tracks();

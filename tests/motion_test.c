@@ -136,7 +136,7 @@ static void pack_fun7_89(project_store_t *out, const project_t *q, const motion_
 }
 static int fun7_89(void)
 {
-    int bad = 0, ok; ui_power_on(); track_t *t = &trk[0];
+    int bad = 0, ok; ui_power_on(); felucca_parts(); track_t *t = &trk[0];
     project_t before, after; project_store_t old; motion_store_t m;
     uint32_t i, k;
     for (k = 0; k < NTRK; k++)

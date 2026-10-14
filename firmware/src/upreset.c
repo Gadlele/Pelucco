@@ -76,6 +76,13 @@ static up_rec_t *up_rec(uint32_t k) { return &up_bank[k / UP_PER_BANK].r[k % UP_
  * versions 1..3 (a 16-bit value in every pair) has none; giving it one (a rename) rewrites it as version 4 / 5 when its
  * values fit a byte (up_to_v4; not a version 1 PHYS sound, whose MODEL 2 means DUST) */
 #define UP_CAT_AT (UP_PMAX * 2u - 1u)
+/* Pelucco 1.0: a record Pelucco writes (up_put) carries UP_PELUCCO in the byte before the category (0 in Felucca's
+ * and in Pelucco's before 1.0: np < UP_PEL_AT, never read). Without it, engine 3 / 13 are Felucca's LOFI / SLICE
+ * (project.c proj_from_felucca): up_values gives AMBI / BELL their defaults */
+#define UP_PEL_AT (UP_CAT_AT - 1u)
+#define UP_PELUCCO 0x50u
+_Static_assert(P_COUNT < UP_PEL_AT, "user preset record: the Pelucco mark after the values");
+static int up_pelucco(const up_rec_t *r) { return r->ver >= 4u && r->np < UP_PEL_AT && r->packed[UP_PEL_AT] == UP_PELUCCO; }
 #include "category.c"
 static uint32_t up_cat_of(const up_rec_t *r)
 {
@@ -238,6 +245,7 @@ static int up_parse(const uint8_t *a, uint32_t na, up_rec_t *r, uint32_t *slot)
     r->ver = UP_VER;
     r->engine = a[1];
     r->np = P_COUNT;
+    r->packed[UP_PEL_AT] = UP_PELUCCO;              /* (written by Pelucco: 3 / 13 are AMBI / BELL) */
     for (i = 0; i < n; i++)
         r->name[i] = (char)a[2 + i];
     for (i = 0; i < P_COUNT; i++, k += 2u)
@@ -278,6 +286,9 @@ static void up_values(const up_rec_t *r, int16_t *v)   /* mapped and clamped for
     for (i = 0; i < P_COUNT; i++)
         def[i] = param_desc_of(r->engine, i)->def;
     up_params(r, v, def);
+    if (((FELUCCA_AMBI && r->engine == ENGI_AMBI) || (FELUCCA_BELL && r->engine == ENGI_BELL)) && !up_pelucco(r))
+        for (i = P_E0; i < P_COUNT; i++)             /* (Felucca's LOFI / SLICE: AMBI's / BELL's defaults, as projects) */
+            v[i] = def[i];
     if (r->ver == 1u && ENGINES[r->engine] == &ENG_PHYS)   /* (before 1.0: MODEL 2 was DUST) */
         phys_legacy(&v[P_E0]);
     for (i = 0; i < P_COUNT; i++)
@@ -405,6 +416,7 @@ static int up_store_cat(uint32_t k, const char *name, uint32_t cat)
     r.ver = UP_VER;
     r.engine = TSEL->eng_req;
     r.np = P_COUNT;
+    r.packed[UP_PEL_AT] = UP_PELUCCO;              /* (written by Pelucco: 3 / 13 are AMBI / BELL) */
     up_set_name(&r, k, name);
     for (i = 0; i < P_COUNT; i++)
         up_set_value(&r, i, motion_base_value(TSEL, i));
