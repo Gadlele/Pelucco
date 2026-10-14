@@ -60,6 +60,18 @@ int main(void)
         CHK(active(t) == 1u && lastrms > 100);
         CHK(mn * 2 > steady);                         /* never below half of what it was */
     }
+    /* (1.0) everything released (MIDI All Notes Off, a sound's undo: trk_all_off) while a note fades out for a new one: it
+     * fades on, it does not come back for ever (one voice left, sounding) */
+    input_on(t, 64, 100); run(20);
+    {
+        uint32_t i, fading = 0;
+        for (i = 0; i < NVOICE; i++)
+            fading += t->v[i].active && t->v[i].stage == 5u;
+        CHK(fading == 1u);
+    }
+    trk_all_off(t);
+    run(60000);
+    CHK(active(t) == 1u && lastrms > 100);
     /* REL down: it fades away */
     t->p[P_REL] = 64;
     run(60000);

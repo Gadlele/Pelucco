@@ -445,7 +445,8 @@ static void trk_all_off(track_t *t)
     uint32_t i;
     for (i = 0; i < NVOICE; i++) {
         t->v[i].gate = 0;
-        t->v[i].stage = t->v[i].active ? 3 : 0;
+        if (t->v[i].stage != 5u)                        /* (Pelucco: AMBI's crossfade out goes on: at INF a release */
+            t->v[i].stage = t->v[i].active ? 3 : 0;     /* would hold it for ever) */
     }
     t->nmono = 0;
     t->mono_note = 0;
