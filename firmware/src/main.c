@@ -132,6 +132,7 @@ static void felucca_init(void)
  * reset), a hang (a WDT reset) or a failed boot (bootguard: the last one died within its first 30 s): straight to the
  * UI. The UBOOT paths never get here. */
 static uint32_t crash_seen __attribute__((section(".noinit")));   /* fm1_crash.count at the last boot */
+static uint8_t splash_anim;                   /* the animated splash runs (ANIM on, no crash, no failed boot) */
 static uint8_t boot_clean;                    /* no crash, hang (WDT) or failed boot before this one (boot_leds):
                                                * the sweep runs and the autosave is restored (project.c autosave_boot) */
 static void boot_leds(void)
@@ -155,7 +156,15 @@ static void fm1_main(void)
     settings_init();
     usb_serial_apply();                                 /* (#67: the saved USB SERIAL before usb_start) */
     lcd_init();
-    draw_splash();                                      /* ui_draw.c (1.1.5) */
+    splash_anim = !(ui_prefs & PREF_ANIM_OFF);         /* (not after a crash or a failed boot: boot_leds, below) */
+    if (fm1_crash.magic == FM1_CRASH_MAGIC && fm1_crash.count != crash_seen)
+        splash_anim = 0;
+    if (bootguard.failed || (fm1_boot.p3_rst & 4u))
+        splash_anim = 0;
+    if (splash_anim)
+        splash_draw(0);                                 /* ui_draw.c: the animated splash's first frame */
+    else
+        draw_splash();                                  /* ui_draw.c (1.1.5) */
     if (felucca_dbg.magic != DBG_MAGIC) {
         memset(&felucca_dbg, 0, sizeof felucca_dbg);
         felucca_dbg.magic = DBG_MAGIC;
@@ -190,6 +199,14 @@ static void fm1_main(void)
         settings_save();
     }
     autosave_boot(boot_clean);                /* (1.2) the last session's music, under the splash */
+    if (splash_anim) {                        /* FANTASMA: the animated splash (ui_draw.c splash_draw), SPL_MS long */
+        uint32_t t0 = fm1_ms, el;
+        while ((el = fm1_ms - t0) < (uint32_t)SPL_MS) {
+            splash_draw((int32_t)el);
+            master_poll();                    /* (the pot followed: MIDI IN plays under it) */
+        }
+        draw_splash();                        /* the picture it ends on */
+    } else
     for (ms = 0; ms < 400u; ms += 10u) {      /* the splash; the pot followed (MIDI IN plays under it) */
         fm1_delay_ms(10);
         master_poll();
