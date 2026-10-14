@@ -412,6 +412,23 @@ static int omni(void)
         bad += check("  back to OMNI: the held chord ends at the next key", ngated(t) == 1u);
         key_up(W0);
         bad += check("  and nothing hangs", !ngated(t));
+        /* (1.0) two buttons held together, let go: the second's chord kept alone, the first's does not hang */
+        t->p[P_CHRD] = CH_OMNIH;
+        key_down(C); key_down(G5); key_up(C); key_up(G5);
+        bad += check("OMNI H: C and G held together, let go: G kept alone (G3 B3 D4)",
+                     gate_note(t, 55) && gate_note(t, 59) && gate_note(t, 62) && ngated(t) == 3u);
+        key_down(nth_key(1, 0)); key_up(nth_key(1, 0));
+        bad += check("  the next button: F A C alone, nothing of C's left", gate_note(t, 53) && gate_note(t, 57) &&
+                     gate_note(t, 60) && ngated(t) == 3u);
+        /* (1.0) a string on a note of the kept chord: the chord's note rings on after the string */
+        key_down(C); key_up(C);
+        key_down(W3); key_up(W3);                      /* (W3: C3, the kept chord's root) */
+        bad += check("OMNI H: a string on the kept chord's C3 let go: C3 rings on with the chord",
+                     gate_note(t, 48) && gate_note(t, 52) && gate_note(t, 55) && ngated(t) == 3u);
+        /* (1.0) CHRD turned away from OMNI H: the kept chord ends with no key */
+        t->p[P_CHRD] = CH_OFF;
+        keyboard_block();
+        bad += check("OMNI H turned OFF: the kept chord ends at once", !ngated(t));
     }
     /* the real buttons: ENV held with a button key is the chord's minor and opens no page; ENV alone still does */
     {

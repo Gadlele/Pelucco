@@ -749,6 +749,15 @@ static void omni_unlatch(track_t *t)
         midi_out_event(0x08u | (0x80u | mc) << 8 | x << 16);
     }
 }
+/* OMNI H: note x is in the chord a button left sounding (its key's release must not end it) */
+static int omni_latched(const track_t *t, uint32_t x)
+{
+    uint32_t ti = trk_index(t), i;
+    for (i = 0; i < omni_latch[ti].n; i++)
+        if (omni_latch[ti].note[i] == x)
+            return 1;
+    return 0;
+}
 static void key_on(uint32_t k, track_t *t)
 {
     uint32_t omni = omni_on(t);
@@ -775,14 +784,24 @@ static void key_off(uint32_t k, track_t *t)
     uint32_t n = kb_chn[k], i, mc = trk_midi_ch(trk_index(t));
     kb_chn[k] = 0;
     if (n && t->p[P_CHRD] == CH_OMNIH && omni_on(t) && key_black(k)) {   /* OMNI H: a button's chord rings on */
-        omni_latch[trk_index(t)].n = (uint8_t)n;
+        uint32_t ti = trk_index(t), j, m = omni_latch[ti].n;
+        for (i = 0; i < m; i++) {                     /* the chord kept before (two buttons held together): */
+            uint32_t x = omni_latch[ti].note[i];      /* what the new one does not play ends */
+            for (j = 0; j < n && kb_chord[k][j] != x; j++)
+                ;
+            if (j < n || midi_local_held(t, x))
+                continue;
+            input_off(t, x);
+            midi_out_event(0x08u | (0x80u | mc) << 8 | x << 16);
+        }
+        omni_latch[ti].n = (uint8_t)n;
         for (i = 0; i < n; i++)
             omni_latch[trk_index(t)].note[i] = kb_chord[k][i];
         return;
     }
     for (i = 0; i < n; i++) {
         uint32_t x = kb_chord[k][i];
-        if (midi_local_held(t, x))
+        if (midi_local_held(t, x) || omni_latched(t, x))   /* (a string plucked on the kept chord: it rings on) */
             continue;
         input_off(t, x);
         midi_out_event(0x08u | (0x80u | mc) << 8 | x << 16);
@@ -811,6 +830,9 @@ static void keyboard_block(void)
 {
     uint32_t cur = fm1_in.notes, ch, k;
     uint32_t lay, fx, mute;
+    for (k = 0; k < NTRK; k++)                   /* OMNI H turned off (CHRD, or a kit): the kept chord ends */
+        if (omni_latch[k].n && (trk[k].p[P_CHRD] != CH_OMNIH || !omni_on(&trk[k])))
+            omni_unlatch(&trk[k]);
     ch = cur ^ kb_prev;                          /* keys also sound while entering steps */
     if (perf_remap)
         perf_key_remap();
