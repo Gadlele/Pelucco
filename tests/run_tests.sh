@@ -240,6 +240,9 @@ if [ -f build/gen/felucca_tables.h ]; then
     run "Pad progression: I IV V vi of the scale, held for BARS bars, DENS" "$OUT/prog_test"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -Itests -o "$OUT/noise_inf_test" tests/noise_inf_test.c -lm
     run "AMBI with REL at the top: the noise never lets go, a new note replaces it, REL down releases it" "$OUT/noise_inf_test"
+    $CC -O1 -w -fsanitize=signed-integer-overflow -fno-sanitize-recover=all -Ibuild/gen -Ifirmware/src -Itests \
+        -o "$OUT/noise_inf_ovf" tests/noise_inf_test.c -lm
+    run "AMBI's noise with no signed overflow (1.0: its pink pole wrapped, a click on the device) (UBSan)" "$OUT/noise_inf_ovf"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -Itests -o "$OUT/noise_on_test" tests/noise_on_test.c -lm
     run "Noise always on: keeps sounding at INF through new sounds and cuts" "$OUT/noise_on_test"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -Itests -o "$OUT/pad_test" tests/pad_test.c -lm
