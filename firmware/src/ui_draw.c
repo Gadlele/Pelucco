@@ -1482,28 +1482,92 @@ static void draw_columns(void)
 /* The power-on splash (main.c fm1_main, web/emu felucca_web.c; FANTASMA's own): a neon ghost (the outline, a magenta trail,
  * a glow, two eyes and no mouth) with the name FANTASMA over it in the middle of the screen; small, bottom right, "By
  * Gadlele". Drawn in three bands of the canvas, 80 rows each (the ghost is drawn in every band it reaches, clipped to
- * it). In the saved palette (settings_init before it) */
+ * it). In the saved palette (settings_init before it).
+ * Animated (main.c, ~1.9 s; not with MENU > ANIM OFF, a crash or a failed boot: then this picture at once, 0.4 s): the
+ * ghost glides in from the right and slows, fading up with its glow, then floats; its eyes open from two slits and
+ * blink once; the name is typed letter by letter; "By Gadlele" fades in last; a few slow motes of the HOME's dust drift
+ * about. splash_draw(t): t ms from the start, or SPL_STILL for the picture it ends on (no motes, no float). */
 #define SPL_BAND 80
 #define SPL_NAME_Y 100                              /* the name's line (AF_L, 35 px) */
+#define SPL_STILL (-1)
+#define SPL_MS 1900                                 /* the animation's length */
 static const char SPLASH_NAME[] = "FANTASMA", SPLASH_SUB[] = "By Gadlele";
-static void splash_band(uint32_t y)
+static int32_t spl_ease(int32_t t, int32_t a, int32_t b)     /* 0..256 from a to b ms, smooth */
 {
-    int32_t oy = (int32_t)y;
+    int32_t x;
+    if (t <= a)
+        return 0;
+    if (t >= b)
+        return 256;
+    x = (t - a) * 256 / (b - a);
+    return (x * x * (3 * 256 - 2 * x)) >> 16;
+}
+static uint16_t spl_fade(uint16_t c, int32_t k)              /* the colour at k/256 over the background */
+{
+    return k >= 256 ? c : ux_mix(T_BG, c, k * 100 >> 8);
+}
+static void splash_band(uint32_t y, int32_t t)
+{
+    int32_t oy = (int32_t)y, i, still = t < 0, w = 104, h = 132, top = 30, cx = 120, eh = h / 6;
+    int32_t in = still ? 256 : spl_ease(t, 0, 700);
+    uint16_t line, glow, trail, eye = T_TEXT;
     cv_begin(240, SPL_BAND, T_BG);
-    cv_ghost(120, 30 - oy, 104, 132, T_THEME, T_BG, T_TINT, T_ACCENT, T_TEXT);
-    if (SPL_NAME_Y >= oy && SPL_NAME_Y < oy + SPL_BAND)     /* the name */
-        cv_text(HALF_UP(240 - text_w(&AF_L, SPLASH_NAME)), SPL_NAME_Y - oy, &AF_L, SPLASH_NAME, T_TEXT);
+    if (still) {
+        line = T_THEME;
+        glow = T_TINT;
+        trail = T_ACCENT;
+    } else {
+        int32_t gk = spl_ease(t, 300, 900), eo = spl_ease(t, 650, 800);
+        cx += (256 - in) * 90 >> 8;                                   /* glides in from the right */
+        if (t > 700)
+            top += osc_sine((uint32_t)(t - 700) * 2629000u) * 4 >> 15;   /* floats (4 px) */
+        gk = gk * (200 + (t > 900 ? osc_sine((uint32_t)t * 3797000u) * 40 >> 15 : 0)) >> 8;   /* the glow pulses */
+        line = spl_fade(T_THEME, in);
+        glow = gk ? spl_fade(T_TINT, gk) : 0;
+        trail = spl_fade(T_ACCENT, in * 3 >> 2);
+        eye = spl_fade(T_TEXT, in);
+        eh = t > 1250 && t < 1350 ? 2 : 2 + ((h / 6 - 2) * eo >> 8);  /* the eyes open, one blink */
+        for (i = 0; i < 14; i++) {                                    /* the dust: few, slow, rising */
+            int32_t mx = (i * 97 + 31) % 236 + 2, yy = ((i * 53 + 17) % 230 + 4 - t * (1 + i % 3) / 90) % 236;
+            int32_t a = spl_ease(t, 100 + i * 40, 600 + i * 40) * (i & 1 ? 90 : 150) >> 8;
+            mx += osc_sine((uint32_t)(t + i * 211) * 976000u + (uint32_t)i * 683565000u) * 6 >> 15;
+            if (yy < 0)
+                yy += 236;
+            if (yy >= oy && yy < oy + SPL_BAND)
+                cv_rect(mx, yy - oy, 2, 2, spl_fade(i % 3 == 0 ? T_ACCENT : T_THEME, a));
+        }
+    }
+    cv_ghost(cx, top - oy, w, h, line, T_BG, glow, trail, still ? T_TEXT : T_BG);
+    if (!still) {                                                     /* (the eyes: cv_ghost's geometry) */
+        int32_t ey = top + h * 2 / 5 + (h / 6 - eh) / 2 - oy;
+        cv_rect(cx - w / 4 - w / 18, ey, w / 9 + 1, eh, eye);
+        cv_rect(cx + w / 4 - w / 18, ey, w / 9 + 1, eh, eye);
+    }
+    if (SPL_NAME_Y >= oy && SPL_NAME_Y < oy + SPL_BAND) {             /* the name */
+        int32_t n = still ? 8 : (t - 800) / 80;
+        if (n >= 8 || still) {
+            cv_text(HALF_UP(240 - text_w(&AF_L, SPLASH_NAME)), SPL_NAME_Y - oy, &AF_L, SPLASH_NAME, T_TEXT);
+        } else {                                                      /* typed: the last letter fades up */
+            int32_t x = HALF_UP(240 - text_w(&AF_L, SPLASH_NAME)), k;
+            for (k = 0; k < n; k++) {
+                char c[2] = {SPLASH_NAME[k], 0};
+                cv_text(x, SPL_NAME_Y - oy, &AF_L, c, k == n - 1 ? spl_fade(T_TEXT, spl_ease(t, 800 + k * 80, 860 + n * 80)) : T_TEXT);
+                x += text_w(&AF_L, c);
+            }
+        }
+    }
     if (218 >= oy && 218 < oy + SPL_BAND)
-        cv_text(232 - text_w(&AF_S, SPLASH_SUB), 218 - oy, &AF_S, SPLASH_SUB, T_MID);
+        cv_text(232 - text_w(&AF_S, SPLASH_SUB), 218 - oy, &AF_S, SPLASH_SUB, still ? T_MID : spl_fade(T_MID, spl_ease(t, 1500, 1900)));
     cv_blit(0, y);
 }
-static void draw_splash(void)
+static void splash_draw(int32_t t)
 {
-    splash_band(0);
-    splash_band(SPL_BAND);
-    splash_band(2u * SPL_BAND);
+    splash_band(0, t);
+    splash_band(SPL_BAND, t);
+    splash_band(2u * SPL_BAND, t);
     lcd_sync();
 }
+static void draw_splash(void) { splash_draw(SPL_STILL); }
 
 /* UPDATE MODE countdown (main.c: OCT- + OCT+ held): over everything, the menu and the dialogs too */
 static void draw_uboot(void)
