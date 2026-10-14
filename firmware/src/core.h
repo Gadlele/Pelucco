@@ -25,6 +25,13 @@
 #define FELUCCA_FM4 0            /* the DIGITAL engine (eng_digital.c, four-operator FM): kept in the tree, not built
                                   * by default; replaced by FM6, its sounds convert (fm4_convert.c) */
 #endif
+#ifndef FELUCCA_RESCUE                 /* main.c usb_rescue: the USB rescue (the device build, with the updater) */
+#if FELUCCA_OTA && !defined(FELUCCA_WEB)
+#define FELUCCA_RESCUE 1
+#else
+#define FELUCCA_RESCUE 0
+#endif
+#endif
 #define NENGINES 14              /* engine 13 comes last: SLICE or, in Pelucco's default build, BELL */
 #define ENGI_BELL 13u
 #define ENGI_AMBI 3u
