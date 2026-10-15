@@ -1729,12 +1729,12 @@ function makeMockDevice(opt = {}) {
         P("WARM STR", [0, 4, 30, 20, 14, 0, 0, 0], [108, 90, 110, 112], 0, 5)] },
     { name: "AMBI", titles: ["BED", "CRKL"], edit: [D("COLR", F.PCT, 0, 127, 64), D("FREQ", F.CUTOFF, 0, 127, 80), D("RES", F.PCT, 0, 127, 20), D("SWELL", F.PCT, 0, 127, 50),
         D("CRKL", F.PCT, 0, 127, 0), D("POP", F.PCT, 0, 127, 40), D("RATE", F.PCT, 0, 127, 64), D("BAL", F.PCT, 0, 127, 70)],
-      presets: [P("SEA", [110, 62, 15, 110, 0, 0, 20, 0], [70, 90, 120, 64], 0, 14), P("SURF", [70, 78, 30, 127, 0, 0, 45, 0], [60, 90, 115, 64], 0, 14),
-        P("STORM", [127, 45, 25, 127, 0, 0, 60, 0], [90, 90, 127, 64], 0, 14), P("WIND", [64, 70, 100, 90, 0, 0, 55, 0], [90, 90, 110, 64], 0, 14),
-        P("STREAM", [40, 92, 70, 90, 0, 0, 90, 0], [50, 90, 120, 64], 0, 14), P("HISS", [0, 110, 0, 0, 0, 0, 64, 0], [20, 90, 127, 64], 0, 14),
-        P("FIRE", [115, 50, 12, 60, 55, 55, 40, 80], [30, 90, 120, 64], 0, 14), P("VINYL", [20, 105, 10, 0, 50, 8, 64, 105], [5, 90, 127, 64], 0, 14),
-        P("RAIN", [45, 100, 20, 30, 105, 15, 60, 80], [30, 90, 127, 64], 0, 14), P("STORM RAIN", [110, 70, 20, 100, 95, 25, 70, 72], [50, 90, 127, 64], 0, 14),
-        P("CAVE DRIP", [120, 40, 30, 40, 22, 90, 30, 100], [40, 90, 127, 64], 0, 14), P("CRICKETS", [10, 118, 110, 20, 85, 3, 64, 90], [40, 90, 127, 64], 0, 14)] },
+      presets: [P("SEA", [110, 62, 15, 110, 0, 0, 20, 0], [70, 90, 120, 64], 0, 0), P("SURF", [70, 78, 30, 127, 0, 0, 45, 0], [60, 90, 115, 64], 0, 0),
+        P("STORM", [127, 45, 25, 127, 0, 0, 60, 0], [90, 90, 127, 64], 0, 0), P("WIND", [64, 70, 100, 90, 0, 0, 55, 0], [90, 90, 110, 64], 0, 0),
+        P("STREAM", [40, 92, 70, 90, 0, 0, 90, 0], [50, 90, 120, 64], 0, 0), P("HISS", [0, 110, 0, 0, 0, 0, 64, 0], [20, 90, 127, 64], 0, 0),
+        P("FIRE", [115, 50, 12, 60, 55, 55, 40, 80], [30, 90, 120, 64], 0, 0), P("VINYL", [20, 105, 10, 0, 50, 8, 64, 105], [5, 90, 127, 64], 0, 0),
+        P("RAIN", [45, 100, 20, 30, 105, 15, 60, 80], [30, 90, 127, 64], 0, 0), P("STORM RAIN", [110, 70, 20, 100, 95, 25, 70, 72], [50, 90, 127, 64], 0, 0),
+        P("CAVE DRIP", [120, 40, 30, 40, 22, 90, 30, 100], [40, 90, 127, 64], 0, 0), P("CRICKETS", [10, 118, 110, 20, 85, 3, 64, 90], [40, 90, 127, 64], 0, 0)] },
     { name: "SAMPLE", titles: ["SET", "TONE"], edit: [E("SET", ["PIANO", "PIANO", "FLUTE", "SAX", "PIANO", "USR1", "USR2", "USR3"], 0), D("TUNE", F.SEMI, -24, 24, 0), D("BITS", F.INT, 0, 127, 0),
         E("LOOP", NONOFF, 1), D("CUT", F.INT, 0, 127, 127), NONE, D("DRV", F.PCT, 0, 127, 0), NONE],
       presets: [P("PIANO", [0, 0, 0, 1, 127, 0, 0, 0], [0, 127, 127, 70]), P("PIANO", [0, 0, 0, 1, 127, 0, 0, 0], [0, 127, 127, 70]),
@@ -1798,7 +1798,7 @@ function makeMockDevice(opt = {}) {
         P("ORGAN", [0, 0, 0, 0, 0, 0, 0, 6], [0, 0, 127, 0], 0, 6), P("PLUCK", [0, 0, 0, 0, 0, 0, 0, 7], [0, 0, 127, 0], 0, 13),
         P("SLOW STRINGS FM", [0, 1, 8, 0, 0, 3, 45, 4], [0, 0, 127, 0], 0, 5)] },
     { name: "BELL", titles: ["BELL", "GEN"], edit: [E("RATIO", ["1", "1.5", "2", "2.76", "3", "3.5", "4.77"], 4),
-        D("TONE", F.PCT, 0, 127, 40), D("ENV", F.PCT, 0, 127, 60), D("DTN", F.INT, 0, 50, 6),
+        D("TONE", F.PCT, 0, 127, 40), D("ENV", F.PCT, 0, 127, 60), D("DTN", F.INT, 0, 50, 6, null, "ct"),
         D("DENS", F.INT, 0, 100, 0, null, "%"), D("EVOLVE", F.INT, 0, 100, 20, null, "%"),
         E("RANGE", ["1 OCT", "2 OCT", "3 OCT", "4 OCT"], 1), D("SEED", F.INT, 0, 127, 0)],
       presets: [P("THUMB", [2, 28, 85, 0, 0, 0, 0, 0], [8, 75, 0, 65], 0, 3), P("TOY", [2, 18, 70, 0, 0, 0, 0, 0], [10, 80, 0, 70], 0, 3),
@@ -1958,11 +1958,11 @@ function makeMockDevice(opt = {}) {
     st.bank[slot] = snapshot(name);
     clearSteps(); st.p[29] = 16;
   });
-  /* the power-on sounds (engines.c TRK_DEF): ACID, PAD, PULSE LD, DRUM KIT */
-  [[1, FM6_E, 4], [2, 3, 0], [3, 10, 0], [0, 0, 4]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
-  /* the device powers on with its sequencers empty; the mock starts as a little demo to look at: track 1 with
-     the ACID pattern, track 4 with BEAT (as SAVE > PHRASES would load them), pads left, lead right */
-  st.sel = 3; loadPattern(11);
+  /* the power-on sounds (engines.c TRK_DEF): FM6 PAD, ANALOG SAW LEAD, BELL THUMB, AMBI SEA */
+  [[1, 0, 0], [2, ENG.findIndex((e) => e.name === "BELL"), 0], [3, 3, 0], [0, FM6_E, 4]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
+  /* the device powers on with its sequencers empty (TRK_DEF suggests no pattern); the mock starts as a little demo
+     to look at: track 1 with the ACID pattern (as SAVE > PHRASES would load it), pads left, lead right; track 4
+     (AMBI SEA) empty, as on the device */
   st.sel = 0; loadPattern(0);
   st.tracks[1].p[39] = -24; st.tracks[2].p[39] = 20; st.tracks[2].p[0] = 92;
   const project = () => JSON.parse(JSON.stringify({ tracks: st.tracks, sel: st.sel, g: st.g, songRows: st.songRows }));
