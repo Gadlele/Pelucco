@@ -204,6 +204,7 @@ static void fm1_main(void)
         while ((el = fm1_ms - t0) < (uint32_t)SPL_MS) {
             splash_draw((int32_t)el);
             master_poll();                    /* (the pot followed: MIDI IN plays under it) */
+            fm1_wdt_feed();                   /* (8 s: far off, but the boot's time is the splash's too) */
         }
         draw_splash();                        /* the picture it ends on */
     } else
